@@ -1,0 +1,64 @@
+{
+  "name": "jav_bot",
+  "title": "精品学习资料",
+  "author": "oreki",
+  "description": "",
+  "version": "1.2",
+  "requirements": [],
+  "configField": [
+    {
+      "fieldName": "proxy",
+      "fieldType": "String",
+      "label": "代理",
+      "defaultValue": ""
+    },
+    {
+      "fieldName": "qb_url",
+      "fieldType": "String",
+      "label": "qbittorrent",
+      "defaultValue": ""
+    },
+    {
+      "fieldName": "username",
+      "fieldType": "String",
+      "label": "用户名",
+      "defaultValue": ""
+    },
+    {
+      "fieldName": "password",
+      "fieldType": "String",
+      "label": "密码",
+      "defaultValue": ""
+    },
+     {
+      "fieldName": "path",
+      "fieldType": "String",
+      "label": "qb手动模式下,请填入保存路径",
+      "defaultValue": ""
+    },
+    {
+      "fieldName": "category",
+      "fieldType": "String",
+      "label": "qb自动模式下,请填入分类名称,请提前在qb中建好分类,否贼将保存在默认目录下",
+      "defaultValue": ""
+    },
+    
+    {
+      "fieldName": "jav_cookie",
+      "fieldType": "String",
+      "label": "javlibrary的cookie,倘如遇到cf盾，请设置cookie",
+      "defaultValue": ""
+    },
+    {
+      "fieldName": "ua",
+      "fieldType": "String",
+      "label": "倘如遇到cf盾，请设置ua",
+      "defaultValue": ""
+    }
+
+  ],
+  "logoUrl": "",
+  "githubUrl": null,
+  "helpDocUrl": "",
+  "dependencies": null
+}
