@@ -1,5 +1,7 @@
 import random
 import time
+import typing
+
 import requests
 import bs4
 from qbittorrent import Client
@@ -25,11 +27,12 @@ qb_username = None
 qb_password = None
 category = None
 qb = None
+message_to_uid: typing.List[int] = []
 
 
 @plugin.after_setup
 def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
-    global path, proxies, torrent_folder, qb_url, qb_username, qb_password, jav_cookie, ua, category
+    global path, proxies, torrent_folder, qb_url, qb_username, qb_password, jav_cookie, ua, category, message_to_uid
     if config.get('path'):
         path = config.get('path')
     if config.get('proxy'):
@@ -49,11 +52,13 @@ def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
         ua = config.get('ua')
     if config.get('category'):
         category = config.get('category')
+    if config.get('uid'):
+        message_to_uid = config.get('uid')
 
 
 @plugin.config_changed
 def config_changed(config: Dict[str, Any]):
-    global path, proxies, torrent_folder, qb_url, qb_username, qb_password, jav_cookie, ua, category
+    global path, proxies, torrent_folder, qb_url, qb_username, qb_password, jav_cookie, ua, category, message_to_uid
     if config.get('path'):
         path = config.get('path')
     if config.get('proxy'):
@@ -73,22 +78,33 @@ def config_changed(config: Dict[str, Any]):
         ua = config.get('ua')
     if config.get('category'):
         category = config.get('category')
+    if config.get('uid'):
+        message_to_uid = config.get('uid')
 
 
 @plugin.task('task', '定时任务', cron_expression='0 22 * * *')
 def task():
     time.sleep(random.randint(1, 3600))
     if login_qb():
-        save_new_code()
-        main()
+        new_code_list = save_new_code()
+        download_code_list = main()
+        if new_code_list:
+            push_new_code_msg(new_code_list)
+        if download_code_list:
+            push_new_download_msg(download_code_list)
+        _LOGGER.error("精品科目,执行结束")
     else:
         _LOGGER.error('QB登录失败')
 
 
 def command():
     if login_qb():
-        save_new_code()
-        main()
+        new_code_list = save_new_code()
+        download_code_list = main()
+        if new_code_list:
+            push_new_code_msg(new_code_list)
+        if download_code_list:
+            push_new_download_msg(download_code_list)
         _LOGGER.error("精品科目,执行结束")
     else:
         _LOGGER.error('QB登录失败')
@@ -104,6 +120,7 @@ def download_by_code(code):
                 'img': ''
             }
             save_chapter(chapter)
+            push_new_code_msg([code])
         chapter = get_chapter(code)
         if chapter['status'] == 1:
             return '你已经下载过该科目'
@@ -118,6 +135,7 @@ def download_by_code(code):
                 chapter['download_url'] = torrent['download_url']
                 chapter['download_path'] = path
                 update_chapter(chapter)
+                push_new_download_msg([code])
                 return '已开始下载该科目的资源'
             else:
                 return '添加种子下载失败'
@@ -141,6 +159,7 @@ def save_new_code():
     if not av_list:
         _LOGGER.error('爬取jav失败')
         return
+    new_chapter = []
     for av in av_list:
         code = av['code']
         overview = av['overview']
@@ -153,6 +172,31 @@ def save_new_code():
                 'img': img
             }
             save_chapter(chapter)
+            new_chapter.append(code)
+    return new_chapter
+
+def push_msg(title, content):
+    for uid in message_to_uid:
+        server.notify.send_message_by_tmpl('{{title}}', '{{a}}', {
+            'title': title,
+            'a': content,
+            'link_url': '',
+            'pic_url': 'https://api.r10086.com/img-api.php?type=%E5%B0%91%E5%A5%B3%E5%86%99%E7%9C%9F'
+        }, to_uid=uid)
+
+
+# 有新的科目进入20大榜单
+def push_new_code_msg(code_list):
+    title = '有新的科目进入想看列表'
+    content = '\n'.join(code_list)
+    push_msg(title, content)
+
+
+# 想要的科目开始下载
+def push_new_download_msg(code_list):
+    title = '你想看的科目上架了,正在下载'
+    content = '\n'.join(code_list)
+    push_msg(title, content)
 
 
 def main():
@@ -163,6 +207,7 @@ def main():
     chapters = list_un_download_chapter()
     _LOGGER.info("尚未下载的科目:")
     _LOGGER.info([chapter['chapter_code'] for chapter in chapters])
+    download_chapter = []
     for chapter in chapters:
         code = chapter['chapter_code']
         torrents = grab_m_team(code)
@@ -176,6 +221,7 @@ def main():
                     chapter['download_url'] = torrent['download_url']
                     chapter['download_path'] = path
                     update_chapter(chapter)
+                    download_chapter.append(code)
                 else:
                     _LOGGER.error('添加种子到下载器出错')
             else:
@@ -184,7 +230,7 @@ def main():
             _LOGGER.info("尚无资源")
         _LOGGER.info("等待10-20S继续操作")
         time.sleep(random.randint(10, 20))
-
+    return download_chapter
 
 def grab_m_team(keyword):
     url = f'https://kp.m-team.cc/adult.php?incldead=1&spstate=0&inclbookmarked=0&search={keyword}&search_area=0&search_mode=0'

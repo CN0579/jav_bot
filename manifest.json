@@ -54,8 +54,15 @@
       "fieldType": "String",
       "label": "倘如遇到cf盾，请设置ua",
       "defaultValue": ""
+    },
+    {
+      "fieldName": "uid",
+      "fieldType": "Enum",
+      "label": "推送用户",
+      "helperText": "选择接收推送的用户,不选则不推送",
+      "enumValuesRef": "UserList",
+      "multiValue": true
     }
-
   ],
   "logoUrl": "",
   "githubUrl": null,
