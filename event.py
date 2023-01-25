@@ -110,7 +110,8 @@ def command():
         _LOGGER.error('QB登录失败')
 
 
-def download_by_code(code):
+def download_by_code(code: str):
+    code = code.upper()
     if login_qb():
         chapter = get_chapter(code)
         if not chapter:
@@ -175,13 +176,14 @@ def save_new_code():
             new_chapter.append(code)
     return new_chapter
 
+
 def push_msg(title, content):
     for uid in message_to_uid:
         server.notify.send_message_by_tmpl('{{title}}', '{{a}}', {
             'title': title,
             'a': content,
             'link_url': '',
-            'pic_url': 'https://api.r10086.com/img-api.php?type=%E5%B0%91%E5%A5%B3%E5%86%99%E7%9C%9F'
+            'pic_url': 'https://api.r10086.com/img-api.php?type=%E6%9E%81%E5%93%81%E7%BE%8E%E5%A5%B3%E5%9B%BE%E7%89%87'
         }, to_uid=uid)
 
 
@@ -231,6 +233,7 @@ def main():
         _LOGGER.info("等待10-20S继续操作")
         time.sleep(random.randint(10, 20))
     return download_chapter
+
 
 def grab_m_team(keyword):
     url = f'https://kp.m-team.cc/adult.php?incldead=1&spstate=0&inclbookmarked=0&search={keyword}&search_area=0&search_mode=0'
