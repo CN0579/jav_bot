@@ -10,6 +10,7 @@ from mbot.core.plugins import *
 from typing import Dict, Any
 import logging
 from .sql import *
+import yaml
 
 _LOGGER = logging.getLogger(__name__)
 server = mbot_api
@@ -22,9 +23,7 @@ proxies = {
 torrent_folder = '/data/plugins/jav_bot/torrents'
 jav_cookie = ''
 ua = ''
-qb_url = None
-qb_username = None
-qb_password = None
+
 category = None
 qb = None
 message_to_uid: typing.List[int] = []
@@ -32,7 +31,7 @@ message_to_uid: typing.List[int] = []
 
 @plugin.after_setup
 def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
-    global path, proxies, torrent_folder, qb_url, qb_username, qb_password, jav_cookie, ua, category, message_to_uid
+    global path, proxies, torrent_folder, jav_cookie, ua, category, message_to_uid
     if config.get('path'):
         path = config.get('path')
     if config.get('proxy'):
@@ -162,6 +161,14 @@ def download_by_code(code: str):
     else:
         _LOGGER.error('QB登录失败')
 
+
+def get_qb_config():
+    data = yaml.load(open('conf/base_config.yml', 'r', encoding='utf-8'), Loader=yaml.FullLoader)
+    download_client = data['download_client']
+    for client in download_client:
+        if client['type'] == 'qbittorrent':
+            return client
+    return None
 
 def login_qb():
     global qb

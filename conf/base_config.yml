@@ -1,0 +1,481 @@
+download_client:
+- is_default: true
+  monitor_all_torrents: false
+  name: ' Qbittorrentee'
+  need_login: true
+  password: oreki@321
+  site_id:
+  - audiences
+  - gainbound
+  - hdatmos
+  - HDTime
+  - keepfrds
+  - mteam
+  - pthome
+  - pttime
+  - azusa
+  - carpt
+  - piggo
+  status: 1
+  type: qbittorrent
+  url: http://192.168.50.138:8090/
+  username: admin
+- host: 192.168.50.138
+  is_default: false
+  monitor_all_torrents: false
+  name: Transmission4u2
+  need_login: true
+  password: oreki@321
+  port: 9091
+  site_id:
+  - U2
+  - kamept
+  status: 1
+  type: transmission
+  url: http://192.168.50.138:9091
+  username: admin
+file_link:
+  disc_single_folder: false
+  exact_year: true
+  file_process_mode: link
+  fix_emby_bdmv_bug: false
+  movie:
+    filename: '{{name}} ({{year}}){%if version %} - {{version}}{% endif %}'
+    folder: '{{name}} ({{year}})'
+  recognize: true
+  tv:
+    filename: '{{name}} S{{season}}E{{ep_start}}{%if ep_end %}-E{{ep_end}}{% endif
+      %}{%if version %} - {{version}}{% endif %}'
+    folder: '{{name}} ({{year}})'
+  use_area_folder: false
+  use_unknown_dir: true
+free_download:
+  available_space: 1024
+  avg_statistics_period: 10
+  enable: true
+  maximum_active_torrent: 10
+  save_path: /video/downloads
+  upload_mbps_maximum: 30
+frontend:
+  search_template:
+  - name: 默认
+    option:
+      category:
+      - Movie
+      - TV
+      - Anime
+      - Documentary
+      searchContent:
+      - searchDouban
+      - searchMediaServer
+      - searchSite
+      site: null
+  - name: 做任务
+    option:
+      category:
+      - Movie
+      - TV
+      - Documentary
+      - Anime
+      searchContent:
+      - searchDouban
+      - searchMediaServer
+      - searchSite
+      site:
+      - ssd
+      - HDHome
+      - HDarea
+      - hddolby
+  - name: 资源搜索
+    option:
+      category:
+      - Movie
+      - TV
+      - Documentary
+      - Anime
+      searchContent:
+      - searchDouban
+      - searchMediaServer
+      - searchSite
+      site: []
+  - name: 观众
+    option:
+      category:
+      - Movie
+      - TV
+      - Documentary
+      - Anime
+      searchContent:
+      - searchDouban
+      - searchMediaServer
+      - searchSite
+      site:
+      - audiences
+media_path:
+- download_path: /video/ACG/动漫
+  file_process_mode: link
+  qbit_cate: ''
+  source_dir: /video/ACG/动漫
+  target_dir: /video/links/anime
+  type: tv
+  use_area_folder: true
+- download_path: /video/纪录片
+  file_process_mode: link
+  qbit_cate: ''
+  source_dir: /video/纪录片
+  target_dir: /video/links/documentary
+  type: tv
+  use_area_folder: true
+- download_path: /video/综艺
+  file_process_mode: link
+  qbit_cate: ''
+  source_dir: /video/综艺
+  target_dir: /video/links/variety
+  type: tv
+  use_area_folder: true
+- download_path: /video/ACG/卡通片
+  file_process_mode: link
+  qbit_cate: ''
+  source_dir: /video/ACG/卡通片
+  target_dir: /video/links/carton
+  type: tv
+  use_area_folder: true
+- download_path: /video/电影/国产电影
+  file_process_mode: link
+  qbit_cate: ''
+  source_dir: /video/电影/国产电影
+  target_dir: /video/links/movie
+  type: movie
+  use_area_folder: true
+- download_path: /video/电影/日韩电影
+  file_process_mode: link
+  qbit_cate: ''
+  source_dir: /video/电影/日韩电影
+  target_dir: /video/links/movie
+  type: movie
+  use_area_folder: true
+- download_path: /video/电影/欧美电影
+  file_process_mode: link
+  qbit_cate: ''
+  source_dir: /video/电影/欧美电影
+  target_dir: /video/links/movie
+  type: movie
+  use_area_folder: true
+- download_path: /video/电影/其他
+  file_process_mode: link
+  qbit_cate: ''
+  source_dir: /video/电影/其他
+  target_dir: /video/links/movie
+  type: movie
+  use_area_folder: true
+- download_path: /video/电视剧/国产电视剧
+  file_process_mode: link
+  qbit_cate: ''
+  source_dir: /video/电视剧/国产电视剧
+  target_dir: /video/links/tv
+  type: tv
+  use_area_folder: true
+- download_path: /video/电视剧/日韩电视剧
+  file_process_mode: link
+  qbit_cate: ''
+  source_dir: /video/电视剧/日韩电视剧
+  target_dir: /video/links/tv
+  type: tv
+  use_area_folder: true
+- download_path: /video/电视剧/欧美电视剧
+  file_process_mode: link
+  qbit_cate: ''
+  source_dir: /video/电视剧/欧美电视剧
+  target_dir: /video/links/tv
+  type: tv
+  use_area_folder: true
+- download_path: /video/电视剧/其他
+  file_process_mode: link
+  qbit_cate: ''
+  source_dir: /video/电视剧/其他
+  target_dir: /video/links/tv
+  type: tv
+  use_area_folder: true
+- download_path: /video/ACG/动漫电影
+  file_process_mode: link
+  qbit_cate: ''
+  source_dir: /video/ACG/动漫电影
+  target_dir: /video/links/anime_movie
+  type: movie
+  use_area_folder: true
+- download_path: /video/ACG/国漫
+  file_process_mode: link
+  qbit_cate: ''
+  source_dir: /video/ACG/国漫
+  target_dir: /video/links/anime
+  type: tv
+  use_area_folder: true
+- download_path: /video/ACG/同人音声
+  file_process_mode: link
+  qbit_cate: ''
+  source_dir: /video/ACG/同人音声
+  target_dir: /video/links/同人音声
+  type: movie
+- download_path: /video/ACG/路边合集
+  file_process_mode: move
+  qbit_cate: ''
+  source_dir: /video/ACG/路边合集
+  target_dir: /video/links/路边合集
+  type: movie
+- download_path: /video/学习资料/色花堂
+  file_process_mode: link
+  qbit_cate: ''
+  source_dir: /video/学习资料/色花堂
+  target_dir: /video/links/学习资料/色花堂
+  type: movie
+media_server:
+- master_server: true
+  name: plex
+  refresh_media_server: true
+  token: KqzveXzxP3ZXRjFy7MgW
+  type: plex
+  url: http://192.168.50.138:32400
+movie_metadata:
+  douban:
+    cookie: talionnav_show_app="0"; douban-fav-remind=1; gr_user_id=6806c949-a244-47d7-adc0-84ebb3481a77;
+      bid=H8KrB9tGHgI; ll="118175"; viewed="35937990"; __gads=ID=f4485f0f8c66b12c-2287ccfb3fd500e8:T=1658302154:RT=1658302154:S=ALNI_Mahh5J6fL57NC0BoznFQlfbZ5b3tQ;
+      __gpi=UID=000007e30c06cba7:T=1658302154:RT=1658302154:S=ALNI_MbRI-2mk1B5F4ELsnUnq9NICfba8g;
+      push_noty_num=0; push_doumail_num=0; __utmv=30149280.18197; Hm_lvt_6d4a8cfea88fa457c3127e14fb5fabc2=1662080180;
+      _ga=GA1.2.838930923.1607759102; ct=y; __utmz=30149280.1667526403.201.126.utmcsr=movie.douban.com|utmccn=(referral)|utmcmd=referral|utmcct=/subject/20452350/;
+      __utmc=30149280; ap_v=0,6.0; __utma=30149280.838930923.1607759102.1667798011.1667808396.205;
+      __utmb=30149280.0.10.1667808396; _gid=GA1.2.1133024443.1667808404; dbcl2="181978928:HKjYr8OGX7A";
+      ck=aOuB; frodotk="b02fd2f3004dbd0d108f78d900e93727"; talionusr="eyJpZCI6ICIxODE5Nzg5MjgiLCAibmFtZSI6ICJLaWxsfnRoZSBib3kifQ=="
+  fanart:
+    api_key: e2b57499a27fe137424592e9b320686d
+    proxies: ''
+  link_template:
+    disc_single_folder: true
+    exact_year: true
+    file_process_mode: link
+    fix_emby_bdmv_bug: false
+    movie:
+      filename: '{{name}} ({{year}}) [tmdbid={{tmdbid}}]{%if version %} - {{version}}{%
+        endif %}'
+      folder: '{{name}} ({{year}}) [tmdbid={{tmdbid}}]'
+    recognize: true
+    tv:
+      filename: '{{name}} S{{season}}E{{ep_start}}{%if ep_end %}-E{{ep_end}}{% endif
+        %}{%if version %} - {{version}}{% endif %}'
+      folder: '{{name}} ({{year}}) [tmdbid={{tmdbid}}]'
+    use_unknown_dir: true
+  tmdb:
+    api_key: a73897c5d2f8e08f8a7b27d761277da2
+    proxies: ''
+notify_channel:
+- aes_key: NNBOSO1eFdfA6iCRDZ2HVcC6PU2qw5rUzHxX5n72qaI
+  agentid: '1000002'
+  corpid: wwc8f8ffe9738db82a
+  corpsecret: tAbm4ngD6v0aAEsfUUe_Q7P40uK7ZhAWXC3ayG0-ZHI
+  enable: true
+  name: qywx
+  server_url: http://api.xmoviebot.com
+  token: iSammWxRe92WtvW0Tvkxycl8eYwID
+  touser: '@all'
+  type: qywx
+  use_server_proxy: false
+- enable: false
+  name: telegram
+  proxy: http://192.168.50.138:7893
+  server_url: https://api.telegram.org
+  token: 5513502377:AAH28NnFtlfZxOpb2qkx57w-RCYNjJMs3Ek
+  type: telegram
+  user_id: '5028134079'
+- enable: true
+  name: Discord
+  notify_message:
+  - download_completed_movie
+  - download_completed_tv
+  - download_start_movie
+  - download_start_tv
+  - site_error
+  - sub_from_trending_movie
+  - sub_from_trending_tv
+  - sub_movie
+  - sub_tv
+  proxy: http://192.168.50.138:7893
+  type: discord
+  webhook: https://discord.com/api/webhooks/1029203121739677767/-lgNvmzaUu78D7nAakxOh9CT5L7nX7kZajrAF-bhS-5HgTxYn_wWzOaaBNGo3savc8YT
+scraper:
+  enable_download_image: true
+  generate_nfo: false
+  hd_background: true
+  hd_poster: true
+  image_source:
+  - TheMovieDB
+  langs_priority:
+  - zh
+  - en
+  person_nfo_path: /emby_person
+  season_image_source:
+  - TheMovieDB
+  use_cn_person_name: false
+server:
+  auth_search_result: true
+  site_max_workers: 6
+  web_search_default_cates:
+  - Movie
+  - TV
+  - Anime
+  - Documentary
+  web_search_result_limit: 0
+  web_search_timeout: 10
+smart_download:
+  douban:
+    default_score_rule: compress
+    download_paths:
+    - area: []
+      cate:
+      - 动画
+      download_path: /video/ACG/动漫电影
+      score_rule: compress
+      type: movie
+    - area:
+      - 中国大陆
+      - 中国香港
+      - 中国台湾
+      cate: []
+      download_path: /video/电影/国产电影
+      score_rule: compress
+      type: movie
+    - area:
+      - 欧美
+      - 英国
+      - 法国
+      - 德国
+      - 意大利
+      - 西班牙
+      - 俄罗斯
+      - 伊朗
+      - 加拿大
+      - 澳大利亚
+      - 爱尔兰
+      - 瑞典
+      - 巴西
+      - 丹麦
+      - 美国
+      cate: []
+      download_path: /video/电影/欧美电影
+      score_rule: compress
+      type: movie
+    - area:
+      - 日本
+      - 韩国
+      - 泰国
+      - 印度
+      cate: []
+      download_path: /video/电影/日韩电影
+      score_rule: compress
+      type: movie
+    - area: []
+      cate: []
+      download_path: /video/电影/其他
+      score_rule: compress
+      type: movie
+    - area: []
+      cate:
+      - 儿童
+      download_path: /video/ACG/卡通片
+      score_rule: compress
+      type: tv
+    - area:
+      - 中国大陆
+      cate:
+      - 动画
+      download_path: /video/ACG/国漫
+      score_rule: compress
+      type: tv
+    - area: []
+      cate:
+      - 动画
+      download_path: /video/ACG/动漫
+      score_rule: compress
+      type: tv
+    - area: []
+      cate:
+      - 真人秀
+      - 脱口秀
+      download_path: /video/综艺
+      score_rule: compress
+      type: tv
+    - area: []
+      cate:
+      - 纪录
+      download_path: /video/纪录片
+      score_rule: compress
+      type: tv
+    - area:
+      - 中国大陆
+      - 中国香港
+      - 中国台湾
+      cate: []
+      download_path: /video/电视剧/国产电视剧
+      score_rule: compress
+      type: tv
+    - area:
+      - 日本
+      - 韩国
+      - 印度
+      - 泰国
+      cate: []
+      download_path: /video/电视剧/日韩电视剧
+      score_rule: compress
+      type: tv
+    - area:
+      - 欧美
+      - 美国
+      - 英国
+      - 法国
+      - 德国
+      - 意大利
+      - 西班牙
+      - 俄罗斯
+      - 伊朗
+      - 加拿大
+      - 澳大利亚
+      - 爱尔兰
+      - 瑞典
+      - 巴西
+      - 丹麦
+      cate: []
+      download_path: /video/电视剧/欧美电视剧
+      score_rule: compress
+      type: tv
+    - area: []
+      cate: []
+      download_path: /video/电视剧/其他
+      score_rule: compress
+      type: tv
+    users:
+    - id: '181978928'
+      pull_time_range: 365
+subscribe:
+  approval_required: false
+  download_process_executor_worker: 1
+  error_waiting_time: 600
+subtitle:
+  enable: false
+  exclude_area:
+  - 中国大陆
+  - 中国台湾
+  - 中国香港
+  file_name_template: '{{ name }}.{{ language[0] }}{% if language[0] == "zh-cn" and
+    language | length == 2 %}.default{% endif%}{{ subtitle_ext }}'
+  filter_type:
+  - srt
+  - ass
+  finder_type:
+  - zimuku
+  - subhd
+  not_found_stop_minutes: '1440'
+  sync_language:
+  - zh-cn
+  - zh-tw
+web:
+  host: '::'
+  port: 1329
+  server_url: https://mr.05730116.xyz:88
