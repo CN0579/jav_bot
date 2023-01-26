@@ -1,11 +1,13 @@
 import datetime
+import os
 import sqlite3
 from sqlite3 import OperationalError
 import logging
 
 _LOGGER = logging.getLogger(__name__)
 
-db_path = '/data/plugins/jav_bot/db/jp_study.db'
+db_path = '/data/plugins/jav_bot_db/jp_study.db'
+db_folder = '/data/plugins/jav_bot_db'
 
 
 def dict_factory(cursor, row):
@@ -16,36 +18,38 @@ def dict_factory(cursor, row):
 
 
 def create_database():
-    conn = sqlite3.connect(db_path)
-    cur = conn.cursor()
-    try:
-        sql = """CREATE TABLE chapter (
-                    id integer primary key autoincrement,
-                    chapter_code varchar(15) not null,
-                    overview varchar(255),
-                    status integer,
-                    size varchar(15),
-                    download_url varchar(55),
-                    download_path varchar(55),
-                    create_time integer,
-                    update_time integer,
-                    img_url varchar(255)
-                );"""
-        cur.execute(sql)
-        print("create table success")
-        return True
-    except OperationalError as o:
-        print(str(o))
-        pass
-        if str(o) == "table chapter already exists":
+    if not os.path.exists(db_path):
+        os.mkdir(db_folder)
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+        try:
+            sql = """CREATE TABLE chapter (
+                        id integer primary key autoincrement,
+                        chapter_code varchar(15) not null,
+                        overview varchar(255),
+                        status integer,
+                        size varchar(15),
+                        download_url varchar(55),
+                        download_path varchar(55),
+                        create_time integer,
+                        update_time integer,
+                        img_url varchar(255)
+                    );"""
+            cur.execute(sql)
+            print("create table success")
             return True
-        return False
-    except Exception as e:
-        print(e)
-        return False
-    finally:
-        cur.close()
-        conn.close()
+        except OperationalError as o:
+            print(str(o))
+            pass
+            if str(o) == "table chapter already exists":
+                return True
+            return False
+        except Exception as e:
+            print(e)
+            return False
+        finally:
+            cur.close()
+            conn.close()
 
 
 def save_chapter(data):

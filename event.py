@@ -20,7 +20,7 @@ proxies = {
     'http': '',
     'https': '',
 }
-torrent_folder = '/data/plugins/jav_bot/torrents'
+torrent_folder = '/data/plugins/jav_bot_torrents'
 jav_cookie = ''
 ua = ''
 
@@ -50,6 +50,10 @@ def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
         message_to_uid = config.get('uid')
     if config.get('qb_name'):
         qb_name = config.get('qb_name')
+    create_database()
+    if not os.path.exists(torrent_folder):
+        os.mkdir(torrent_folder)
+
 
 
 @plugin.config_changed
