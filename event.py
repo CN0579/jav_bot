@@ -39,12 +39,6 @@ def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
             'http': config.get('proxy'),
             'https': config.get('proxy')
         }
-    if config.get('qb_url'):
-        qb_url = config.get('qb_url')
-    if config.get('username'):
-        qb_username = config.get('username')
-    if config.get('password'):
-        qb_password = config.get('password')
     if config.get('jav_cookie'):
         jav_cookie = config.get('jav_cookie')
     if config.get('ua'):
@@ -57,7 +51,7 @@ def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
 
 @plugin.config_changed
 def config_changed(config: Dict[str, Any]):
-    global path, proxies, torrent_folder, qb_url, qb_username, qb_password, jav_cookie, ua, category, message_to_uid
+    global path, proxies, torrent_folder, jav_cookie, ua, category, message_to_uid
     if config.get('path'):
         path = config.get('path')
     if config.get('proxy'):
@@ -65,12 +59,6 @@ def config_changed(config: Dict[str, Any]):
             'http': config.get('proxy'),
             'https': config.get('proxy')
         }
-    if config.get('qb_url'):
-        qb_url = config.get('qb_url')
-    if config.get('username'):
-        qb_username = config.get('username')
-    if config.get('password'):
-        qb_password = config.get('password')
     if config.get('jav_cookie'):
         jav_cookie = config.get('jav_cookie')
     if config.get('ua'):
@@ -86,9 +74,9 @@ def task():
     time.sleep(random.randint(1, 3600))
     if login_qb():
         new_code_list = save_new_code()
-        download_code_list = main()
         if new_code_list:
             push_new_code_msg(new_code_list)
+        download_code_list = main()
         if download_code_list:
             push_new_download_msg(download_code_list)
         _LOGGER.error("精品科目,执行结束")
@@ -99,9 +87,9 @@ def task():
 def command():
     if login_qb():
         new_code_list = save_new_code()
-        download_code_list = main()
         if new_code_list:
             push_new_code_msg(new_code_list)
+        download_code_list = main()
         if download_code_list:
             push_new_download_msg(download_code_list)
         _LOGGER.error("精品科目,执行结束")
@@ -163,20 +151,25 @@ def download_by_code(code: str):
 
 
 def get_qb_config():
-    data = yaml.load(open('conf/base_config.yml', 'r', encoding='utf-8'), Loader=yaml.FullLoader)
+    yml_path = '/data/conf/base_config.yml'
+    data = yaml.load(open(yml_path, 'r', encoding='utf-8'), Loader=yaml.FullLoader)
     download_client = data['download_client']
     for client in download_client:
         if client['type'] == 'qbittorrent':
             return client
     return None
 
+
 def login_qb():
     global qb
-    qb = Client(qb_url)
-    res = qb.login(qb_username, qb_password)
-    if res:
-        return False
-    return True
+    client_config = get_qb_config()
+    if client_config:
+        qb = Client(client_config['url'])
+        res = qb.login(client_config['username'], client_config['password'])
+        if res:
+            return False
+        return True
+    return False
 
 
 def save_new_code():
@@ -268,7 +261,6 @@ def grab_m_team(keyword):
     if user_agent:
         headers['User-Agent'] = user_agent
     res = requests.get(url, cookies=m_team_cookies, headers=headers)
-    _LOGGER.info(res.text)
     soup = bs4.BeautifulSoup(res.text, 'html.parser')
     trs = soup.select('table.torrents > tr:has(table.torrentname)')
     torrents = []
@@ -303,7 +295,6 @@ def grab_jav(page):
     if ua:
         headers['User-Agent'] = ua
     res = requests.get(url=url, proxies=proxies, cookies=cookie_dict, headers=headers)
-    _LOGGER.info(res.text)
     soup = bs4.BeautifulSoup(res.text, 'html.parser')
     videos = soup.select('div.video>a')
     for video in videos:

@@ -13,24 +13,6 @@
       "defaultValue": ""
     },
     {
-      "fieldName": "qb_url",
-      "fieldType": "String",
-      "label": "qbittorrent",
-      "defaultValue": ""
-    },
-    {
-      "fieldName": "username",
-      "fieldType": "String",
-      "label": "用户名",
-      "defaultValue": ""
-    },
-    {
-      "fieldName": "password",
-      "fieldType": "String",
-      "label": "密码",
-      "defaultValue": ""
-    },
-     {
       "fieldName": "path",
       "fieldType": "String",
       "label": "qb手动模式下,请填入保存路径",
@@ -42,7 +24,6 @@
       "label": "qb自动模式下,请填入分类名称,请提前在qb中建好分类,否贼将保存在默认目录下",
       "defaultValue": ""
     },
-    
     {
       "fieldName": "jav_cookie",
       "fieldType": "String",
