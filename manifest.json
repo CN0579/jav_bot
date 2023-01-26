@@ -13,6 +13,12 @@
       "defaultValue": ""
     },
     {
+      "fieldName": "qb_name",
+      "fieldType": "String",
+      "label": "请填写下载工具中,QB的名称，目前只支持QB下载",
+      "defaultValue": ""
+    },
+    {
       "fieldName": "path",
       "fieldType": "String",
       "label": "qb手动模式下,请填入保存路径",

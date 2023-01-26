@@ -27,11 +27,12 @@ ua = ''
 category = None
 qb = None
 message_to_uid: typing.List[int] = []
+qb_name = ''
 
 
 @plugin.after_setup
 def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
-    global path, proxies, torrent_folder, jav_cookie, ua, category, message_to_uid
+    global path, proxies, torrent_folder, jav_cookie, ua, category, message_to_uid, qb_name
     if config.get('path'):
         path = config.get('path')
     if config.get('proxy'):
@@ -47,11 +48,13 @@ def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
         category = config.get('category')
     if config.get('uid'):
         message_to_uid = config.get('uid')
+    if config.get('qb_name'):
+        qb_name = config.get('qb_name')
 
 
 @plugin.config_changed
 def config_changed(config: Dict[str, Any]):
-    global path, proxies, torrent_folder, jav_cookie, ua, category, message_to_uid
+    global path, proxies, torrent_folder, jav_cookie, ua, category, message_to_uid, qb_name
     if config.get('path'):
         path = config.get('path')
     if config.get('proxy'):
@@ -67,6 +70,8 @@ def config_changed(config: Dict[str, Any]):
         category = config.get('category')
     if config.get('uid'):
         message_to_uid = config.get('uid')
+    if config.get('qb_name'):
+        qb_name = config.get('qb_name')
 
 
 @plugin.task('task', '定时任务', cron_expression='0 22 * * *')
@@ -154,9 +159,17 @@ def get_qb_config():
     yml_path = '/data/conf/base_config.yml'
     data = yaml.load(open(yml_path, 'r', encoding='utf-8'), Loader=yaml.FullLoader)
     download_client = data['download_client']
-    for client in download_client:
-        if client['type'] == 'qbittorrent':
-            return client
+    if qb_name:
+        for client in download_client:
+            if client['name'] == qb_name and client['type'] == 'qbittorrent':
+                return client
+    else:
+        for client in download_client:
+            if client['is_default'] and client['type'] == 'qbittorrent':
+                return client
+        for client in download_client:
+            if client['type'] == 'qbittorrent':
+                return client
     return None
 
 
