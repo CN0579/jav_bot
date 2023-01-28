@@ -1,3 +1,4 @@
+import os
 import random
 import shutil
 import time
@@ -241,6 +242,11 @@ def list_completed_unlink_torrents():
 
 
 def hard_link(file_content):
+    global hard_link_dir
+    hard_link_dir = hard_link_dir.strip()
+    hard_link_dir = hard_link_dir.rstrip("\\")
+    if not os.path.exists(hard_link_dir):
+        os.makedirs(hard_link_dir)
     basename = os.path.basename(file_content)
     hard_link_path = f"{hard_link_dir.rstrip('/')}/{basename}"
     if os.path.isdir(file_content):
