@@ -1,10 +1,11 @@
 import random
+import shutil
 import time
 import typing
 
 import requests
 import bs4
-from qbittorrent import Client
+from qbittorrentapi import Client
 from mbot.openapi import mbot_api
 from mbot.core.plugins import *
 from typing import Dict, Any
@@ -25,14 +26,18 @@ jav_cookie = ''
 ua = ''
 
 category = None
-qb = None
+qb: Client = None
 message_to_uid: typing.List[int] = []
 qb_name = ''
+hard_link_dir = ''
+need_hard_link = False
+need_mdc = False
+mdc_exclude_dir = ''
 
 
 @plugin.after_setup
 def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
-    global path, proxies, torrent_folder, jav_cookie, ua, category, message_to_uid, qb_name
+    global path, proxies, torrent_folder, jav_cookie, ua, category, message_to_uid, qb_name, hard_link_dir, need_hard_link, need_mdc, mdc_exclude_dir
     if config.get('path'):
         path = config.get('path')
     if config.get('proxy'):
@@ -50,15 +55,20 @@ def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
         message_to_uid = config.get('uid')
     if config.get('qb_name'):
         qb_name = config.get('qb_name')
+    if config.get('hard_link_dir'):
+        hard_link_dir = config.get('hard_link_dir')
+    need_hard_link = config.get('need_hard_link')
+    need_mdc = config.get('need_mdc')
+    if config.get('mdc_exclude_dir'):
+        mdc_exclude_dir = config.get('mdc_exclude_dir')
     create_database()
     if not os.path.exists(torrent_folder):
         os.mkdir(torrent_folder)
 
 
-
 @plugin.config_changed
 def config_changed(config: Dict[str, Any]):
-    global path, proxies, torrent_folder, jav_cookie, ua, category, message_to_uid, qb_name
+    global path, proxies, torrent_folder, jav_cookie, ua, category, message_to_uid, qb_name, hard_link_dir, need_hard_link, need_mdc, mdc_exclude_dir
     if config.get('path'):
         path = config.get('path')
     if config.get('proxy'):
@@ -76,6 +86,12 @@ def config_changed(config: Dict[str, Any]):
         message_to_uid = config.get('uid')
     if config.get('qb_name'):
         qb_name = config.get('qb_name')
+    if config.get('hard_link_dir'):
+        hard_link_dir = config.get('hard_link_dir')
+    need_hard_link = config.get('need_hard_link')
+    need_mdc = config.get('need_mdc')
+    if config.get('mdc_exclude_dir'):
+        mdc_exclude_dir = config.get('mdc_exclude_dir')
 
 
 @plugin.task('task', '定时任务', cron_expression='0 22 * * *')
@@ -181,12 +197,56 @@ def login_qb():
     global qb
     client_config = get_qb_config()
     if client_config:
-        qb = Client(client_config['url'])
-        res = qb.login(client_config['username'], client_config['password'])
-        if res:
+        qb = Client(host=client_config['url'], username=client_config['username'], password=client_config['password'])
+        try:
+            qb.auth_log_in()
+        except Exception as e:
             return False
         return True
     return False
+
+
+def download_completed():
+    if login_qb():
+        mdc_path = path
+        if need_hard_link:
+            mdc_path = hard_link_dir
+            hard_link_task()
+        if need_mdc:
+            mdc(mdc_path)
+    else:
+        _LOGGER.error('QB登录失败')
+
+
+def mdc(dir):
+    exclude_dir = mdc_exclude_dir
+    _LOGGER.info(f"即将开始整理目录{dir}的学习资料，排除目录{exclude_dir}")
+
+
+def hard_link_task():
+    torrent_list = list_completed_unlink_torrents()
+    if torrent_list:
+        for torrent in torrent_list:
+            content_path = torrent.get('content_path')
+            torrent_hash = torrent.get('hash')
+            hard_link(content_path)
+            qb.torrents_remove_tags('unlink', torrent_hashes=[torrent_hash])
+            qb.torrents_add_tags(tags='linked', torrent_hashes=[torrent_hash])
+
+
+def list_completed_unlink_torrents():
+    torrent_list = qb.torrents_info(status_filter='completed')
+    filter_list = list(filter(lambda x: 'unlink' in x.tags, torrent_list))
+    return filter_list
+
+
+def hard_link(file_content):
+    basename = os.path.basename(file_content)
+    hard_link_path = f"{hard_link_dir.rstrip('/')}/{basename}"
+    if os.path.isdir(file_content):
+        shutil.copytree(file_content, hard_link_path, copy_function=os.link)
+    if os.path.isfile(file_content):
+        os.link(file_content, hard_link_path)
 
 
 def save_new_code():
@@ -366,7 +426,7 @@ def download_torrent(code, download_url):
 
 def download(torrent_path):
     torrent_file = open(torrent_path, 'rb')
-    return qb.download_from_file(torrent_file, savepath=path, category=category)
+    return qb.torrents_add(torrent_files=[torrent_file], save_path=path, category=category, tags='unlink')
 
 
 def get_m_team_ua():

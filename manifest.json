@@ -31,6 +31,32 @@
       "defaultValue": ""
     },
     {
+      "fieldName": "need_hard_link",
+      "fieldType": "Bool",
+      "label": "硬链",
+      "helperText": "是否开启硬链",
+      "defaultValue": false
+    },
+    {
+      "fieldName": "hard_link_dir",
+      "fieldType": "String",
+      "label": "设置硬链的目录,请提前创建硬链的目录，否则硬链会失败",
+      "defaultValue": ""
+    },
+    {
+      "fieldName": "need_mdc",
+      "fieldType": "Bool",
+      "label": "MDC",
+      "helperText": "是否开启MDC整理学习资料,整理的目录取决于是否开硬链",
+      "defaultValue": false
+    },
+    {
+      "fieldName": "mdc_exclude_dir",
+      "fieldType": "String",
+      "label": "排除需要整理的目录",
+      "defaultValue": ""
+    },
+    {
       "fieldName": "jav_cookie",
       "fieldType": "String",
       "label": "javlibrary的cookie,倘如遇到cf盾，请设置cookie",

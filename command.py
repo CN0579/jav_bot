@@ -5,7 +5,7 @@ from mbot.openapi import mbot_api
 import logging
 from mbot.core.params import ArgSchema, ArgType
 from mbot.core.plugins import plugin, PluginCommandContext, PluginCommandResponse
-from .event import command, download_by_code
+from .event import command, download_by_code, download_completed
 
 server = mbot_api
 _LOGGER = logging.getLogger(__name__)
@@ -37,3 +37,14 @@ def echo(
         _LOGGER.error(e, exc_info=True)
         return PluginCommandResponse(False, f'获取科目失败')
     return PluginCommandResponse(True, f'获取科目成功')
+
+
+@plugin.command(name='hard_link_mdc', title='硬链并整理', desc='硬链并整理', icon='',
+                run_in_background=True)
+def echo(ctx: PluginCommandContext):
+    try:
+        download_completed()
+    except Exception as e:
+        _LOGGER.error(e, exc_info=True)
+        return PluginCommandResponse(False, f'创建数据源失败')
+    return PluginCommandResponse(True, f'创建数据源成功')
