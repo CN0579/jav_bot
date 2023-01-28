@@ -7,43 +7,42 @@ from mbot.openapi import mbot_api
 import logging
 from mbot.core.params import ArgSchema, ArgType
 from mbot.core.plugins import plugin, PluginCommandContext, PluginCommandResponse
-from .event import command, download_by_code, download_completed
+from .event import update_top_rank, download_by_codes, hard_link_and_mdc
+from .sql import *
 
 server = mbot_api
 _LOGGER = logging.getLogger(__name__)
 
 
-@plugin.command(name='update_rate', title='更新并下载', desc='更新学习资料榜单数据，并提交下载,请注意是否已进行过配置',
-                icon='',
-                run_in_background=True)
+@plugin.command(name='update_rate', title='添加新晋番号',
+                        desc='新晋番号将进入想看列表,若存在资源会立刻进行下载',
+                        icon='',
+                        run_in_background=True)
 def update_rate(ctx: PluginCommandContext):
     try:
-        command()
+        update_top_rank()
     except Exception as e:
         _LOGGER.error(e, exc_info=True)
         return PluginCommandResponse(False, f'创建数据源失败')
     return PluginCommandResponse(True, f'创建数据源成功')
 
 
-@plugin.command(name='download', title='下载指定科目', desc='下载指定科目,如果科目不存在，则会进入想看科目列表', icon='',
-                run_in_background=True)
+@plugin.command(name='download', title='下载指定番号', desc='下载指定番号,若资源不存在，将会进入想看列表',
+                        icon='',
+                        run_in_background=True)
 def download(
         ctx: PluginCommandContext,
-        codes: ArgSchema(ArgType.String, '科目名称', '填入想要学习的科目,多个科目用英文逗号隔开')):
+        codes: ArgSchema(ArgType.String, '番号代码', '填入想要学习的番号,多个番号用英文逗号隔开')):
     try:
-        code_list = codes.split(',')
-        for code in code_list:
-            res = download_by_code(code)
-            _LOGGER.info(res)
-            time.sleep(random.randint(10, 20))
+        download_by_codes(codes)
     except Exception as e:
         _LOGGER.error(e, exc_info=True)
-        return PluginCommandResponse(False, f'获取科目失败')
-    return PluginCommandResponse(True, f'获取科目成功')
+        return PluginCommandResponse(False, f'下载指定番号失败')
+    return PluginCommandResponse(True, f'下载指定番号成功')
 
 
 @plugin.command(name='hard_link', title='硬链', desc='硬链工具', icon='',
-                run_in_background=True)
+                        run_in_background=True)
 def hard_link(
         ctx: PluginCommandContext,
         content_path: ArgSchema(ArgType.String, '源文件/目录路径', ''),
@@ -54,14 +53,16 @@ def hard_link(
 
 
 @plugin.command(name='hard_link_mdc', title='硬链并整理', desc='硬链并整理', icon='',
-                run_in_background=True)
+                        run_in_background=True)
 def hard_link_mdc(ctx: PluginCommandContext):
     try:
-        download_completed()
+        hard_link_and_mdc()
+        _LOGGER.info("硬链整理完成")
     except Exception as e:
         _LOGGER.error(e, exc_info=True)
-        return PluginCommandResponse(False, f'创建数据源失败')
-    return PluginCommandResponse(True, f'创建数据源成功')
+
+        return PluginCommandResponse(False, f'硬链整理失败')
+    return PluginCommandResponse(True, f'硬链整理成功')
 
 
 def hard_link_tool(content_path, hard_link_dir, content_rename):

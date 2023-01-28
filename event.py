@@ -6,13 +6,13 @@ import typing
 
 import requests
 import bs4
-from qbittorrentapi import Client
 from mbot.openapi import mbot_api
 from mbot.core.plugins import *
 from typing import Dict, Any
 import logging
 from .sql import *
-import yaml
+from .qbittorrent import *
+from .scraper import *
 
 _LOGGER = logging.getLogger(__name__)
 server = mbot_api
@@ -27,18 +27,20 @@ jav_cookie = ''
 ua = ''
 
 category = None
-qb: Client = None
+
 message_to_uid: typing.List[int] = []
 qb_name = ''
 hard_link_dir = ''
 need_hard_link = False
 need_mdc = False
 mdc_exclude_dir = ''
+pic_url = 'https://api.r10086.com/img-api.php?type=%E6%9E%81%E5%93%81%E7%BE%8E%E5%A5%B3%E5%9B%BE%E7%89%87'
 
 
 @plugin.after_setup
 def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
-    global path, proxies, torrent_folder, jav_cookie, ua, category, message_to_uid, qb_name, hard_link_dir, need_hard_link, need_mdc, mdc_exclude_dir
+    global path, proxies, torrent_folder, jav_cookie, ua, category, \
+        message_to_uid, qb_name, hard_link_dir, need_hard_link, need_mdc, mdc_exclude_dir, pic_url
     if config.get('path'):
         path = config.get('path')
     if config.get('proxy'):
@@ -62,6 +64,8 @@ def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
     need_mdc = config.get('need_mdc')
     if config.get('mdc_exclude_dir'):
         mdc_exclude_dir = config.get('mdc_exclude_dir')
+    if config.get('pic_url'):
+        pic_url = config.get('pic_url')
     create_database()
     if not os.path.exists(torrent_folder):
         os.mkdir(torrent_folder)
@@ -69,7 +73,8 @@ def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
 
 @plugin.config_changed
 def config_changed(config: Dict[str, Any]):
-    global path, proxies, torrent_folder, jav_cookie, ua, category, message_to_uid, qb_name, hard_link_dir, need_hard_link, need_mdc, mdc_exclude_dir
+    global path, proxies, torrent_folder, jav_cookie, ua, category, \
+        message_to_uid, qb_name, hard_link_dir, need_hard_link, need_mdc, mdc_exclude_dir, pic_url
     if config.get('path'):
         path = config.get('path')
     if config.get('proxy'):
@@ -93,16 +98,25 @@ def config_changed(config: Dict[str, Any]):
     need_mdc = config.get('need_mdc')
     if config.get('mdc_exclude_dir'):
         mdc_exclude_dir = config.get('mdc_exclude_dir')
+    if config.get('pic_url'):
+        pic_url = config.get('pic_url')
 
 
 @plugin.task('task', '定时任务', cron_expression='0 22 * * *')
 def task():
     time.sleep(random.randint(1, 3600))
-    if login_qb():
+    update_top_rank()
+
+
+# 指令1
+# 更新榜单,新晋番号将进入想看列表
+# 查询想看列表未下载的资源，并从馒头爬取资源进行下载
+def update_top_rank():
+    if login_qb(qb_name):
         new_code_list = save_new_code()
         if new_code_list:
             push_new_code_msg(new_code_list)
-        download_code_list = main()
+        download_code_list = fetch_un_download_code()
         if download_code_list:
             push_new_download_msg(download_code_list)
         _LOGGER.error("精品科目,执行结束")
@@ -110,19 +124,39 @@ def task():
         _LOGGER.error('QB登录失败')
 
 
-def command():
+# 指令2
+# 将指定的番号加入想看列表
+# 从馒头爬取资源并下载
+def download_by_codes(codes: str):
+    if login_qb(qb_name):
+        code_list = codes.split(',')
+        for code in code_list:
+            if not code:
+                continue
+            res = download_by_code(code)
+            _LOGGER.info(res)
+            _LOGGER.info("等待10-20S继续操作")
+            time.sleep(random.randint(10, 20))
+    else:
+        _LOGGER.error("qb登录失败")
+
+
+# 指令3
+# 将下载完成的种子硬链
+# 通过MDC整理学习资料
+def hard_link_and_mdc():
     if login_qb():
-        new_code_list = save_new_code()
-        if new_code_list:
-            push_new_code_msg(new_code_list)
-        download_code_list = main()
-        if download_code_list:
-            push_new_download_msg(download_code_list)
-        _LOGGER.error("精品科目,执行结束")
+        mdc_path = path
+        if need_hard_link:
+            mdc_path = hard_link_dir
+            complete_torrent_hard_link()
+        if need_mdc:
+            mdc(mdc_path)
     else:
         _LOGGER.error('QB登录失败')
 
 
+# 将输入不规范的番号规范化返回
 def get_true_code(input_code: str):
     code_list = input_code.split('-')
     code = ''.join(code_list)
@@ -140,83 +174,38 @@ def get_true_code(input_code: str):
     return (prefix + '-' + num).upper()
 
 
+#
 def download_by_code(code: str):
     code = get_true_code(code)
-    if login_qb():
-        chapter = get_chapter(code)
-        if not chapter:
-            chapter = {
-                'code': code,
-                'overview': '手动添加科目，无法获取简介',
-                'img': ''
-            }
-            save_chapter(chapter)
-            push_new_code_msg([code])
-        chapter = get_chapter(code)
-        if chapter['status'] == 1:
-            return '你已经下载过该科目'
+    chapter = get_chapter(code)
+    if not chapter:
+        chapter = {
+            'code': code,
+            'overview': '手动添加番号,暂时无法获取简介',
+            'img': ''
+        }
+        save_chapter(chapter)
+        push_new_code_msg([code])
+    chapter = get_chapter(code)
+    if chapter['status'] == 1:
+        return f'你已经下载过番号{code}'
 
-        torrents = grab_m_team(code)
-        if torrents:
-            torrent = get_best_torrent(torrents)
-            torrent_path = download_torrent(code, torrent['download_url'])
-            res = download(torrent_path)
-            if res == 'Ok.':
-                chapter['size'] = torrent['size']
-                chapter['download_url'] = torrent['download_url']
-                chapter['download_path'] = path
-                update_chapter(chapter)
-                push_new_download_msg([code])
-                return '已开始下载该科目的资源'
-            else:
-                return '添加种子下载失败'
+    torrents = grab_m_team(code)
+    if torrents:
+        torrent = get_best_torrent(torrents)
+        torrent_path = download_torrent(code, torrent['download_url'], torrent_folder)
+        res = download(torrent_path, save_path=path, category=category)
+        if res == 'Ok.':
+            chapter['size'] = torrent['size']
+            chapter['download_url'] = torrent['download_url']
+            chapter['download_path'] = path
+            update_chapter(chapter)
+            push_new_download_msg([code])
+            return f'已开始下载番号{code}'
         else:
-            return '没用找到该科目的资源,已保存到想看的科目列表'
+            return '添加种子失败'
     else:
-        _LOGGER.error('QB登录失败')
-
-
-def get_qb_config():
-    yml_path = '/data/conf/base_config.yml'
-    data = yaml.load(open(yml_path, 'r', encoding='utf-8'), Loader=yaml.FullLoader)
-    download_client = data['download_client']
-    if qb_name:
-        for client in download_client:
-            if client['name'] == qb_name and client['type'] == 'qbittorrent':
-                return client
-    else:
-        for client in download_client:
-            if client['is_default'] and client['type'] == 'qbittorrent':
-                return client
-        for client in download_client:
-            if client['type'] == 'qbittorrent':
-                return client
-    return None
-
-
-def login_qb():
-    global qb
-    client_config = get_qb_config()
-    if client_config:
-        qb = Client(host=client_config['url'], username=client_config['username'], password=client_config['password'])
-        try:
-            qb.auth_log_in()
-        except Exception as e:
-            return False
-        return True
-    return False
-
-
-def download_completed():
-    if login_qb():
-        mdc_path = path
-        if need_hard_link:
-            mdc_path = hard_link_dir
-            hard_link_task()
-        if need_mdc:
-            mdc(mdc_path)
-    else:
-        _LOGGER.error('QB登录失败')
+        return f'没用找到该番号{code}的种子,已保存到想看的科目列表'
 
 
 def mdc(dir):
@@ -224,7 +213,8 @@ def mdc(dir):
     _LOGGER.info(f"即将开始整理目录{dir}的学习资料，排除目录{exclude_dir}")
 
 
-def hard_link_task():
+# 将下载完成的种子，硬链到指定目录
+def complete_torrent_hard_link():
     torrent_list = list_completed_unlink_torrents()
     if torrent_list:
         for torrent in torrent_list:
@@ -235,12 +225,7 @@ def hard_link_task():
             qb.torrents_add_tags(tags='linked', torrent_hashes=[torrent_hash])
 
 
-def list_completed_unlink_torrents():
-    torrent_list = qb.torrents_info(status_filter='completed')
-    filter_list = list(filter(lambda x: 'unlink' in x.tags, torrent_list))
-    return filter_list
-
-
+# 硬链到配置的目录下
 def hard_link(file_content):
     global hard_link_dir
     hard_link_dir = hard_link_dir.strip()
@@ -255,8 +240,9 @@ def hard_link(file_content):
         os.link(file_content, hard_link_path)
 
 
+# 保存新晋番号到想看列表
 def save_new_code():
-    av_list = grab_jav(1)
+    av_list = grab_jav(1, jav_cookie, ua, proxies)
     if not av_list:
         _LOGGER.error('爬取jav失败')
         return
@@ -283,32 +269,33 @@ def push_msg(title, content):
             'title': title,
             'a': content,
             'link_url': '',
-            'pic_url': 'https://api.r10086.com/img-api.php?type=%E6%9E%81%E5%93%81%E7%BE%8E%E5%A5%B3%E5%9B%BE%E7%89%87'
+            'pic_url': pic_url
         }, to_uid=uid)
 
 
 # 有新的科目进入20大榜单
 def push_new_code_msg(code_list):
     title = '有新的科目进入想看列表'
-    content = '\n'.join(code_list)
+    content = ','.join(code_list)
     push_msg(title, content)
 
 
 # 想要的科目开始下载
 def push_new_download_msg(code_list):
     title = '你想看的科目上架了,正在下载'
-    content = '\n'.join(code_list)
+    content = ','.join(code_list)
     push_msg(title, content)
 
 
-def main():
+# 获取未下载的番号
+# 从馒头爬取最佳资源下载
+def fetch_un_download_code():
     cookies = get_m_team_cookie()
     if not cookies:
         _LOGGER.error('尚未配置馒头站点')
         return
     chapters = list_un_download_chapter()
-    _LOGGER.info("尚未下载的科目:")
-    _LOGGER.info([chapter['chapter_code'] for chapter in chapters])
+    _LOGGER.info(f"尚未下载的科目:{[chapter['chapter_code'] for chapter in chapters]}")
     download_chapter = []
     for chapter in chapters:
         code = chapter['chapter_code']
@@ -316,8 +303,8 @@ def main():
         if torrents:
             torrent = get_best_torrent(torrents)
             if torrent:
-                torrent_path = download_torrent(code, torrent['download_url'])
-                res = download(torrent_path)
+                torrent_path = download_torrent(code, torrent['download_url'], torrent_folder)
+                res = download(torrent_path, save_path=path, category=category)
                 if res == 'Ok.':
                     chapter['size'] = torrent['size']
                     chapter['download_url'] = torrent['download_url']
@@ -325,153 +312,11 @@ def main():
                     update_chapter(chapter)
                     download_chapter.append(code)
                 else:
-                    _LOGGER.error('添加种子到下载器出错')
+                    _LOGGER.error('添加种子失败')
             else:
-                _LOGGER.info("未找到有效种子")
+                _LOGGER.info("没有正在做中的种子")
         else:
-            _LOGGER.info("尚无资源")
+            _LOGGER.info(f"{code}:尚无资源")
         _LOGGER.info("等待10-20S继续操作")
         time.sleep(random.randint(10, 20))
     return download_chapter
-
-
-def grab_m_team(keyword):
-    url = f'https://kp.m-team.cc/adult.php?incldead=1&spstate=0&inclbookmarked=0&search={keyword}&search_area=0&search_mode=0'
-    m_team_cookies = get_m_team_cookie()
-    user_agent = get_m_team_ua()
-    cookie_str = get_m_team_cookie_str()
-    headers = {'cookie': cookie_str, 'Referer': "https://kp.m-team.cc"}
-    if user_agent:
-        headers['User-Agent'] = user_agent
-    res = requests.get(url, cookies=m_team_cookies, headers=headers)
-    soup = bs4.BeautifulSoup(res.text, 'html.parser')
-    trs = soup.select('table.torrents > tr:has(table.torrentname)')
-    torrents = []
-    for tr in trs:
-        title = tr.select('a[title][href^="details.php?id="]')[0].get('title')
-        download_url = tr.select('a[href^="download.php?id="]')[0].get('href')
-        size = tr.select('td.rowfollow:nth-last-child(6)')[0].text
-        seeders = tr.select('td.rowfollow:nth-last-child(5)')[0].text
-        leechers = tr.select('td.rowfollow:nth-last-child(4)')[0].text
-        describe_list = tr.select('table.torrentname > tr > td.embedded')[0].contents
-        describe = describe_list[len(describe_list) - 1].text
-
-        torrent = {
-            'title': title,
-            'download_url': download_url,
-            'size': size,
-            'seeders': seeders,
-            'leechers': leechers,
-            'describe': describe
-        }
-        weight = get_weight(title, describe, int(seeders))
-        torrent['weight'] = weight
-        torrents.append(torrent)
-    return torrents
-
-
-def grab_jav(page):
-    url = f'https://www.javlibrary.com/cn/vl_mostwanted.php?page={page}'
-    av_list = []
-    cookie_dict = str_cookies_to_dict(jav_cookie)
-    headers = {'cookie': jav_cookie, 'Referer': "https://www.javlibrary.com"}
-    if ua:
-        headers['User-Agent'] = ua
-    res = requests.get(url=url, proxies=proxies, cookies=cookie_dict, headers=headers)
-    soup = bs4.BeautifulSoup(res.text, 'html.parser')
-    videos = soup.select('div.video>a')
-    for video in videos:
-        code = video.select('a div.id')[0].text
-        img = video.find('img').get('src')
-        overview = video.select('a div.title')[0].text
-        av = {
-            'code': code,
-            'img': img,
-            'overview': overview
-        }
-        av_list.append(av)
-    return av_list
-
-
-def get_weight(title: str, describe: str, seeders: int):
-    cn_keywords = ['中字', '中文字幕', '色花堂', '字幕']
-    weight = 0
-    content = title + describe
-    for keyword in cn_keywords:
-        if content.find(keyword) > -1:
-            weight = weight + 5000
-            break
-    weight = weight + seeders
-    if seeders == 0:
-        weight = -1
-    return weight
-
-
-def get_best_torrent(torrents):
-    if torrents:
-        sort_list = sorted(torrents, key=lambda torrent: torrent['weight'], reverse=True)
-        torrent = sort_list[0]
-        if torrent['weight'] < 0:
-            return None
-        return torrent
-    return None
-
-
-def download_torrent(code, download_url):
-    host = 'https://kp.m-team.cc/'
-    cookies = get_m_team_cookie()
-    res = requests.get(host + download_url, cookies=cookies)
-    folder = torrent_folder
-    torrent_path = f'{folder}/{code}.torrent'
-
-    with open(torrent_path, 'wb') as torrent:
-        torrent.write(res.content)
-        torrent.flush()
-    return torrent_path
-
-
-def download(torrent_path):
-    torrent_file = open(torrent_path, 'rb')
-    return qb.torrents_add(torrent_files=[torrent_file], save_path=path, category=category, tags='unlink')
-
-
-def get_m_team_ua():
-    site_list = server.site.list()
-    ssd_list = list(
-        filter(lambda x: x.site_id == 'mteam', site_list))
-    if len(ssd_list) > 0:
-        ssd = ssd_list[0]
-        user_agent = ssd.user_agent
-        return user_agent
-    return None
-
-
-def get_m_team_cookie_str():
-    site_list = server.site.list()
-    ssd_list = list(
-        filter(lambda x: x.site_id == 'mteam', site_list))
-    if len(ssd_list) > 0:
-        ssd = ssd_list[0]
-        cookies = ssd.cookie
-        return cookies
-    return None
-
-
-def get_m_team_cookie():
-    cookie_str = get_m_team_cookie_str()
-    if cookie_str:
-        dict_cookie = str_cookies_to_dict(cookie_str)
-        return dict_cookie
-    return None
-
-
-def str_cookies_to_dict(cookies):
-    dict_cookie = {}
-    str_cookie_list = cookies.split(';')
-    for cookie in str_cookie_list:
-        if cookie.strip(' '):
-            cookie_key_value = cookie.split('=')
-            key = cookie_key_value[0]
-            value = cookie_key_value[1]
-            dict_cookie[key] = value
-    return dict_cookie

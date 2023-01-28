@@ -1,9 +1,9 @@
 {
   "name": "jav_bot",
-  "title": "精品学习资料",
+  "title": "最想要TOP20",
   "author": "oreki",
   "description": "",
-  "version": "1.2",
+  "version": "beta",
   "requirements": [],
   "configField": [
     {
@@ -15,66 +15,73 @@
     {
       "fieldName": "qb_name",
       "fieldType": "String",
-      "label": "请填写下载工具中,QB的名称，目前只支持QB下载",
+      "label": "请填写下载工具中QB的名称,目前只支持QB下载",
       "defaultValue": ""
     },
     {
       "fieldName": "path",
       "fieldType": "String",
-      "label": "qb手动模式下,请填入保存路径",
+      "label": "QB手动模式下,请填入保存路径",
       "defaultValue": ""
     },
     {
       "fieldName": "category",
       "fieldType": "String",
-      "label": "qb自动模式下,请填入分类名称,请提前在qb中建好分类,否贼将保存在默认目录下",
+      "label": "QB自动模式下,请填入分类名称,并提前在qb中建好分类",
       "defaultValue": ""
     },
     {
       "fieldName": "need_hard_link",
       "fieldType": "Bool",
       "label": "硬链",
-      "helperText": "是否开启硬链",
       "defaultValue": false
     },
     {
       "fieldName": "hard_link_dir",
       "fieldType": "String",
-      "label": "设置硬链的目录,请提前创建硬链的目录，否则硬链会失败",
+      "label": "硬链目录",
       "defaultValue": ""
     },
     {
       "fieldName": "need_mdc",
       "fieldType": "Bool",
       "label": "MDC",
-      "helperText": "是否开启MDC整理学习资料,整理的目录取决于是否开硬链",
+      "helperText": "尚不支持MDC",
       "defaultValue": false
     },
     {
       "fieldName": "mdc_exclude_dir",
       "fieldType": "String",
-      "label": "排除需要整理的目录",
+      "label": "排除不需要整理的目录",
       "defaultValue": ""
     },
     {
       "fieldName": "jav_cookie",
       "fieldType": "String",
-      "label": "javlibrary的cookie,倘如遇到cf盾，请设置cookie",
+      "label": "javlibrary的cookie",
+      "helperText": "若遇到cloud flare,请设置cookie",
       "defaultValue": ""
     },
     {
       "fieldName": "ua",
       "fieldType": "String",
-      "label": "倘如遇到cf盾，请设置ua",
+      "label": "若遇到cloud flare,请设置user-agent",
       "defaultValue": ""
     },
     {
       "fieldName": "uid",
       "fieldType": "Enum",
       "label": "推送用户",
-      "helperText": "选择接收推送的用户,不选则不推送",
+      "helperText": "选择接收推送的用户",
       "enumValuesRef": "UserList",
       "multiValue": true
+    },
+    {
+      "fieldName": "pic_url",
+      "fieldType": "String",
+      "label": "头图URL",
+      "helperText": "默认使用第三方图片",
+      "defaultValue": ""
     }
   ],
   "logoUrl": "",
