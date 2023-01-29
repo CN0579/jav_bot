@@ -29,6 +29,13 @@ def download(torrent_path, save_path, category, client_name: None):
     return False
 
 
+def list_downloading_torrents(client_name):
+    client = get_client(client_name)
+    if client:
+        return client.download_torrents()
+    return None
+
+
 def list_completed_torrents(client_name):
     client = get_client(client_name)
     if client:

@@ -6,8 +6,10 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
-db_path = '/data/plugins/jav_bot_db/jp_study.db'
-db_folder = '/data/plugins/jav_bot_db'
+# db_path = '/data/plugins/jav_bot_db/jp_study.db'
+# db_folder = '/data/plugins/jav_bot_db'
+db_path = './db/jp_study.db'
+db_folder = './db'
 
 
 def dict_factory(cursor, row):
@@ -42,6 +44,39 @@ def create_database():
             print(str(o))
             pass
             if str(o) == "table chapter already exists":
+                return True
+            return False
+        except Exception as e:
+            print(e)
+            return False
+        finally:
+            cur.close()
+            conn.close()
+
+
+def create_download_record_table():
+    if not os.path.exists(db_path):
+        os.mkdir(db_folder)
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+        try:
+            sql = """CREATE TABLE download_record (
+                        id integer primary key autoincrement,
+                        torrent_name varchar(255) not null,
+                        torrent_hash varchar(255) not null,
+                        save_path varchar(255) not null,
+                        content_path varchar(255) not null,
+                        download_status integer not null ,
+                        create_time integer,
+                        update_time integer
+                    );"""
+            cur.execute(sql)
+            print("create table success")
+            return True
+        except OperationalError as o:
+            print(str(o))
+            pass
+            if str(o) == "table download_record already exists":
                 return True
             return False
         except Exception as e:
@@ -128,6 +163,61 @@ def list_un_download_chapter():
         cur.close()
         conn.close()
         return chapters
+
+
+def get_download_record_by(torrent_hash: str):
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = dict_factory
+    cur = conn.cursor()
+    download_record = None
+    try:
+        sql = f"select * from download_record where torrent_hash = '{torrent_hash}'"
+        cur.execute(sql)
+        download_record = cur.fetchone()
+        conn.commit()
+    except Exception as e:
+        _LOGGER.error(str(e))
+        return None
+    finally:
+        cur.close()
+        conn.close()
+        return download_record
+
+
+def save_download_record(data):
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    torrent_name = data.name
+    torrent_hash = data.hash
+    save_path = data.save_path
+    content_path = data.content_path
+    create_time = int(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
+    try:
+        insert_sql = f"insert into download_record(torrent_name,torrent_hash,save_path,content_path,download_status,create_time) " \
+                     f"values" \
+                     f" ('{torrent_name}','{torrent_hash}','{save_path}','{content_path}',0,{create_time})"
+        cur.execute(insert_sql)
+        conn.commit()
+    except Exception as e:
+        _LOGGER.error(str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+
+def update_download_record(torrent_hash):
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    update_time = int(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
+    try:
+        update_sql = f"update download_record set status=1,update_time = {update_time} where torrent_hash = {torrent_hash}"
+        cur.execute(update_sql)
+        conn.commit()
+    except Exception as e:
+        _LOGGER.error(str(e))
+    finally:
+        cur.close()
+        conn.close()
 
 
 if __name__ == '__main__':

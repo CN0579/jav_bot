@@ -108,15 +108,6 @@ def task():
     update_top_rank()
 
 
-@plugin.on_event(
-    bind_event=['DownloadCompleted'], order=1)
-def on_download_completed(ctx: PluginContext, event_type: str, data: Dict):
-    global client_name
-    _LOGGER.info(event_type)
-    _LOGGER.info(data)
-    torrents = list_completed_torrents(client_name=client_name)
-    _LOGGER.info(torrents)
-
 
 # 指令1
 # 更新榜单,新晋番号将进入想看列表
