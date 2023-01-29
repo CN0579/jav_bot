@@ -105,8 +105,15 @@ def config_changed(config: Dict[str, Any]):
 @plugin.task('task', '定时任务', cron_expression='0 22 * * *')
 def task():
     time.sleep(random.randint(1, 3600))
+    start = datetime.datetime.now().timestamp()
     update_top_rank()
-
+    end = datetime.datetime.now().timestamp()
+    downloading_torrents = list_downloading_torrents(client_name=client_name)
+    completed_torrents = list_completed_torrents(client_name=client_name)
+    filter_dl_torrents = list(filter(lambda x: x.save_path == path, downloading_torrents))
+    past_second = int(end - start)
+    filter_cl_torrents = list(
+        filter(lambda x: x.save_path == path and x.seeding_time < past_second, completed_torrents))
 
 
 # 指令1
