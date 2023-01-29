@@ -1,5 +1,5 @@
 from .sql import *
-from .qbittorrent import *
+from .download import *
 from .scraper import *
 from .event import *
 from .command import *

@@ -7,14 +7,14 @@ from mbot.openapi import mbot_api
 import logging
 from mbot.core.params import ArgSchema, ArgType
 from mbot.core.plugins import plugin, PluginCommandContext, PluginCommandResponse
-from .event import update_top_rank, download_by_codes, hard_link_and_mdc
+from .event import update_top_rank, download_by_codes
 from .sql import *
 
 server = mbot_api
 _LOGGER = logging.getLogger(__name__)
 
 
-@plugin.command(name='update_rate', title='添加新晋番号',
+@plugin.command(name='update_rate', title='一键添加新晋番号',
                         desc='新晋番号将进入想看列表,若存在资源会立刻进行下载',
                         icon='',
                         run_in_background=True)
@@ -51,18 +51,6 @@ def hard_link(
     hard_link_tool(content_path, hard_link_dir, content_rename)
     return PluginCommandResponse(True, f'硬链完成')
 
-
-@plugin.command(name='hard_link_mdc', title='硬链并整理', desc='硬链并整理', icon='',
-                        run_in_background=True)
-def hard_link_mdc(ctx: PluginCommandContext):
-    try:
-        hard_link_and_mdc()
-        _LOGGER.info("硬链整理完成")
-    except Exception as e:
-        _LOGGER.error(e, exc_info=True)
-
-        return PluginCommandResponse(False, f'硬链整理失败')
-    return PluginCommandResponse(True, f'硬链整理成功')
 
 
 def hard_link_tool(content_path, hard_link_dir, content_rename):

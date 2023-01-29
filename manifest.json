@@ -13,21 +13,21 @@
       "defaultValue": ""
     },
     {
-      "fieldName": "qb_name",
+      "fieldName": "client_name",
       "fieldType": "String",
-      "label": "请填写下载工具中QB的名称,目前只支持QB下载",
+      "label": "请填写下载工具中客户端名称，默认使用默认下载器",
       "defaultValue": ""
     },
     {
       "fieldName": "path",
       "fieldType": "String",
-      "label": "QB手动模式下,请填入保存路径",
+      "label": "手动模式下,请填入保存路径",
       "defaultValue": ""
     },
     {
       "fieldName": "category",
       "fieldType": "String",
-      "label": "QB自动模式下,请填入分类名称,并提前在qb中建好分类",
+      "label": "自动模式下,请填入分类名称,并提前在qb中建好分类",
       "defaultValue": ""
     },
     {

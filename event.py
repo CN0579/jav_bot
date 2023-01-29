@@ -11,8 +11,8 @@ from mbot.core.plugins import *
 from typing import Dict, Any
 import logging
 from .sql import *
-from .qbittorrent import *
 from .scraper import *
+from .download import *
 
 _LOGGER = logging.getLogger(__name__)
 server = mbot_api
@@ -29,7 +29,7 @@ ua = ''
 category = None
 
 message_to_uid: typing.List[int] = []
-qb_name = ''
+client_name = ''
 hard_link_dir = ''
 need_hard_link = False
 need_mdc = False
@@ -40,7 +40,7 @@ pic_url = 'https://api.r10086.com/img-api.php?type=%E6%9E%81%E5%93%81%E7%BE%8E%E
 @plugin.after_setup
 def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
     global path, proxies, torrent_folder, jav_cookie, ua, category, \
-        message_to_uid, qb_name, hard_link_dir, need_hard_link, need_mdc, mdc_exclude_dir, pic_url
+        message_to_uid, client_name, hard_link_dir, need_hard_link, need_mdc, mdc_exclude_dir, pic_url
     if config.get('path'):
         path = config.get('path')
     if config.get('proxy'):
@@ -56,8 +56,8 @@ def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
         category = config.get('category')
     if config.get('uid'):
         message_to_uid = config.get('uid')
-    if config.get('qb_name'):
-        qb_name = config.get('qb_name')
+    if config.get('client_name'):
+        client_name = config.get('client_name')
     if config.get('hard_link_dir'):
         hard_link_dir = config.get('hard_link_dir')
     need_hard_link = config.get('need_hard_link')
@@ -74,7 +74,7 @@ def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
 @plugin.config_changed
 def config_changed(config: Dict[str, Any]):
     global path, proxies, torrent_folder, jav_cookie, ua, category, \
-        message_to_uid, qb_name, hard_link_dir, need_hard_link, need_mdc, mdc_exclude_dir, pic_url
+        message_to_uid, client_name, hard_link_dir, need_hard_link, need_mdc, mdc_exclude_dir, pic_url
     if config.get('path'):
         path = config.get('path')
     if config.get('proxy'):
@@ -90,8 +90,8 @@ def config_changed(config: Dict[str, Any]):
         category = config.get('category')
     if config.get('uid'):
         message_to_uid = config.get('uid')
-    if config.get('qb_name'):
-        qb_name = config.get('qb_name')
+    if config.get('client_name'):
+        client_name = config.get('client_name')
     if config.get('hard_link_dir'):
         hard_link_dir = config.get('hard_link_dir')
     need_hard_link = config.get('need_hard_link')
@@ -108,52 +108,41 @@ def task():
     update_top_rank()
 
 
+@plugin.on_event(
+    bind_event=['DownloadCompleted'], order=1)
+def on_download_completed(ctx: PluginContext, event_type: str, data: Dict):
+    global client_name
+    _LOGGER.info(event_type)
+    _LOGGER.info(data)
+    torrents = list_completed_torrents(client_name=client_name)
+    _LOGGER.info(torrents)
+
+
 # 指令1
 # 更新榜单,新晋番号将进入想看列表
 # 查询想看列表未下载的资源，并从馒头爬取资源进行下载
 def update_top_rank():
-    if login_qb(qb_name):
-        new_code_list = save_new_code()
-        if new_code_list:
-            push_new_code_msg(new_code_list)
-        download_code_list = fetch_un_download_code()
-        if download_code_list:
-            push_new_download_msg(download_code_list)
-        _LOGGER.error("精品科目,执行结束")
-    else:
-        _LOGGER.error('QB登录失败')
+    new_code_list = save_new_code()
+    if new_code_list:
+        push_new_code_msg(new_code_list)
+    download_code_list = fetch_un_download_code()
+    if download_code_list:
+        push_new_download_msg(download_code_list)
+    _LOGGER.error("精品科目,执行结束")
 
 
 # 指令2
 # 将指定的番号加入想看列表
 # 从馒头爬取资源并下载
 def download_by_codes(codes: str):
-    if login_qb(qb_name):
-        code_list = codes.split(',')
-        for code in code_list:
-            if not code:
-                continue
-            res = download_by_code(code)
-            _LOGGER.info(res)
-            _LOGGER.info("等待10-20S继续操作")
-            time.sleep(random.randint(10, 20))
-    else:
-        _LOGGER.error("qb登录失败")
-
-
-# 指令3
-# 将下载完成的种子硬链
-# 通过MDC整理学习资料
-def hard_link_and_mdc():
-    if login_qb():
-        mdc_path = path
-        if need_hard_link:
-            mdc_path = hard_link_dir
-            complete_torrent_hard_link()
-        if need_mdc:
-            mdc(mdc_path)
-    else:
-        _LOGGER.error('QB登录失败')
+    code_list = codes.split(',')
+    for code in code_list:
+        if not code:
+            continue
+        res = download_by_code(code)
+        _LOGGER.info(res)
+        _LOGGER.info("等待10-20S继续操作")
+        time.sleep(random.randint(10, 20))
 
 
 # 将输入不规范的番号规范化返回
@@ -194,8 +183,8 @@ def download_by_code(code: str):
     if torrents:
         torrent = get_best_torrent(torrents)
         torrent_path = download_torrent(code, torrent['download_url'], torrent_folder)
-        res = download(torrent_path, save_path=path, category=category)
-        if res == 'Ok.':
+        res = download(torrent_path, save_path=path, category=category, client_name=client_name)
+        if res:
             chapter['size'] = torrent['size']
             chapter['download_url'] = torrent['download_url']
             chapter['download_path'] = path
@@ -211,18 +200,6 @@ def download_by_code(code: str):
 def mdc(dir):
     exclude_dir = mdc_exclude_dir
     _LOGGER.info(f"即将开始整理目录{dir}的学习资料，排除目录{exclude_dir}")
-
-
-# 将下载完成的种子，硬链到指定目录
-def complete_torrent_hard_link():
-    torrent_list = list_completed_unlink_torrents()
-    if torrent_list:
-        for torrent in torrent_list:
-            content_path = torrent.get('content_path')
-            torrent_hash = torrent.get('hash')
-            hard_link(content_path)
-            qb.torrents_remove_tags('unlink', torrent_hashes=[torrent_hash])
-            qb.torrents_add_tags(tags='linked', torrent_hashes=[torrent_hash])
 
 
 # 硬链到配置的目录下
@@ -275,14 +252,14 @@ def push_msg(title, content):
 
 # 有新的科目进入20大榜单
 def push_new_code_msg(code_list):
-    title = '有新的科目进入想看列表'
+    title = '有新的学习资料进入想看列表'
     content = ','.join(code_list)
     push_msg(title, content)
 
 
 # 想要的科目开始下载
 def push_new_download_msg(code_list):
-    title = '你想看的科目上架了,正在下载'
+    title = '有新的学习资料开始下载'
     content = ','.join(code_list)
     push_msg(title, content)
 
@@ -304,8 +281,8 @@ def fetch_un_download_code():
             torrent = get_best_torrent(torrents)
             if torrent:
                 torrent_path = download_torrent(code, torrent['download_url'], torrent_folder)
-                res = download(torrent_path, save_path=path, category=category)
-                if res == 'Ok.':
+                res = download(torrent_path, save_path=path, category=category, client_name=client_name)
+                if res:
                     chapter['size'] = torrent['size']
                     chapter['download_url'] = torrent['download_url']
                     chapter['download_path'] = path
