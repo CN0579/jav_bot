@@ -197,26 +197,6 @@ def download_by_code(code: str):
         return f'没用找到该番号{code}的种子,已保存到想看的科目列表'
 
 
-def mdc(dir):
-    exclude_dir = mdc_exclude_dir
-    _LOGGER.info(f"即将开始整理目录{dir}的学习资料，排除目录{exclude_dir}")
-
-
-# 硬链到配置的目录下
-def hard_link(file_content):
-    global hard_link_dir
-    hard_link_dir = hard_link_dir.strip()
-    hard_link_dir = hard_link_dir.rstrip("\\")
-    if not os.path.exists(hard_link_dir):
-        os.makedirs(hard_link_dir)
-    basename = os.path.basename(file_content)
-    hard_link_path = f"{hard_link_dir.rstrip('/')}/{basename}"
-    if os.path.isdir(file_content):
-        shutil.copytree(file_content, hard_link_path, copy_function=os.link)
-    if os.path.isfile(file_content):
-        os.link(file_content, hard_link_path)
-
-
 # 保存新晋番号到想看列表
 def save_new_code():
     av_list = grab_jav(1, jav_cookie, ua, proxies)
