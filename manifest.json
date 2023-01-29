@@ -1,9 +1,9 @@
 {
   "name": "jav_bot",
-  "title": "最想要TOP20",
+  "title": "JPJB",
   "author": "oreki",
   "description": "",
-  "version": "beta",
+  "version": ".beta",
   "requirements": [],
   "configField": [
     {
@@ -31,29 +31,11 @@
       "defaultValue": ""
     },
     {
-      "fieldName": "need_hard_link",
-      "fieldType": "Bool",
-      "label": "硬链",
-      "defaultValue": false
-    },
-    {
-      "fieldName": "hard_link_dir",
-      "fieldType": "String",
-      "label": "硬链目录",
-      "defaultValue": ""
-    },
-    {
       "fieldName": "need_mdc",
       "fieldType": "Bool",
       "label": "MDC",
-      "helperText": "尚不支持MDC",
+      "helperText": "需安装MDC插件,并前往配置好对应路径",
       "defaultValue": false
-    },
-    {
-      "fieldName": "mdc_exclude_dir",
-      "fieldType": "String",
-      "label": "排除不需要整理的目录",
-      "defaultValue": ""
     },
     {
       "fieldName": "jav_cookie",

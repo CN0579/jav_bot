@@ -1,6 +1,7 @@
 import os
 import random
 import shutil
+import threading
 import time
 import typing
 
@@ -30,17 +31,13 @@ category = None
 
 message_to_uid: typing.List[int] = []
 client_name = ''
-hard_link_dir = ''
-need_hard_link = False
 need_mdc = False
-mdc_exclude_dir = ''
 pic_url = 'https://api.r10086.com/img-api.php?type=%E6%9E%81%E5%93%81%E7%BE%8E%E5%A5%B3%E5%9B%BE%E7%89%87'
 
 
-@plugin.after_setup
-def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
+def init_config(config):
     global path, proxies, torrent_folder, jav_cookie, ua, category, \
-        message_to_uid, client_name, hard_link_dir, need_hard_link, need_mdc, mdc_exclude_dir, pic_url
+        message_to_uid, client_name, need_mdc, pic_url
     if config.get('path'):
         path = config.get('path')
     if config.get('proxy'):
@@ -58,14 +55,14 @@ def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
         message_to_uid = config.get('uid')
     if config.get('client_name'):
         client_name = config.get('client_name')
-    if config.get('hard_link_dir'):
-        hard_link_dir = config.get('hard_link_dir')
-    need_hard_link = config.get('need_hard_link')
     need_mdc = config.get('need_mdc')
-    if config.get('mdc_exclude_dir'):
-        mdc_exclude_dir = config.get('mdc_exclude_dir')
     if config.get('pic_url'):
         pic_url = config.get('pic_url')
+
+
+@plugin.after_setup
+def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
+    init_config(config)
     create_database()
     if not os.path.exists(torrent_folder):
         os.mkdir(torrent_folder)
@@ -73,47 +70,38 @@ def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
 
 @plugin.config_changed
 def config_changed(config: Dict[str, Any]):
-    global path, proxies, torrent_folder, jav_cookie, ua, category, \
-        message_to_uid, client_name, hard_link_dir, need_hard_link, need_mdc, mdc_exclude_dir, pic_url
-    if config.get('path'):
-        path = config.get('path')
-    if config.get('proxy'):
-        proxies = {
-            'http': config.get('proxy'),
-            'https': config.get('proxy')
-        }
-    if config.get('jav_cookie'):
-        jav_cookie = config.get('jav_cookie')
-    if config.get('ua'):
-        ua = config.get('ua')
-    if config.get('category'):
-        category = config.get('category')
-    if config.get('uid'):
-        message_to_uid = config.get('uid')
-    if config.get('client_name'):
-        client_name = config.get('client_name')
-    if config.get('hard_link_dir'):
-        hard_link_dir = config.get('hard_link_dir')
-    need_hard_link = config.get('need_hard_link')
-    need_mdc = config.get('need_mdc')
-    if config.get('mdc_exclude_dir'):
-        mdc_exclude_dir = config.get('mdc_exclude_dir')
-    if config.get('pic_url'):
-        pic_url = config.get('pic_url')
+    init_config(config)
 
 
 @plugin.task('task', '定时任务', cron_expression='0 22 * * *')
 def task():
     time.sleep(random.randint(1, 3600))
-    start = datetime.datetime.now().timestamp()
     update_top_rank()
-    end = datetime.datetime.now().timestamp()
+    if need_mdc:
+        _LOGGER.info("等待所有种子下载完成")
+        t = threading.Thread(target=wait_all_torrent_completed, args=('jav_bot', 60,))
+        t.start()
+        return
+
+
+def wait_all_torrent_completed(name, sleep_second):
     downloading_torrents = list_downloading_torrents(client_name=client_name)
-    completed_torrents = list_completed_torrents(client_name=client_name)
-    filter_dl_torrents = list(filter(lambda x: x.save_path == path, downloading_torrents))
-    past_second = int(end - start)
-    filter_cl_torrents = list(
-        filter(lambda x: x.save_path == path and x.seeding_time < past_second, completed_torrents))
+    filter_dl_torrents = list(filter(lambda x: x.save_path.rstrip('/') == path.rstrip('/'), downloading_torrents))
+    if len(filter_dl_torrents) > 0:
+        time.sleep(sleep_second)
+        wait_all_torrent_completed(name, sleep_second)
+    else:
+        _LOGGER.info(f"线程{name}:所有种子下载完成，开始执行MDC")
+        mdc()
+
+
+def mdc():
+    _LOGGER.info("开始执行MDC")
+    host = 'http://127.0.0.1'
+    port = server.config.web.port
+    url = f'{host}:{port}/api/plugins/mdc/start'
+    res = requests.post(url)
+    _LOGGER.info(res)
 
 
 # 指令1
@@ -141,6 +129,11 @@ def download_by_codes(codes: str):
         _LOGGER.info(res)
         _LOGGER.info("等待10-20S继续操作")
         time.sleep(random.randint(10, 20))
+    if need_mdc:
+        _LOGGER.info("等待所有种子下载完成")
+        t = threading.Thread(target=wait_all_torrent_completed, args=('jav_bot', 30,))
+        t.start()
+        return
 
 
 # 将输入不规范的番号规范化返回
