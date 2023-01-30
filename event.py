@@ -14,6 +14,7 @@ import logging
 from .sql import *
 from .scraper import *
 from .download import *
+from . import libmdc_ng
 
 _LOGGER = logging.getLogger(__name__)
 server = mbot_api
@@ -92,7 +93,7 @@ def wait_all_torrent_completed(name, sleep_second):
         wait_all_torrent_completed(name, sleep_second)
     else:
         _LOGGER.info(f"线程{name}:所有种子下载完成，开始执行MDC")
-        mdc()
+        mdc_a_jiang()
 
 
 def mdc():
@@ -103,6 +104,46 @@ def mdc():
     res = requests.post(url)
     _LOGGER.info(res)
 
+
+def collect_videos(path):
+    videos = []
+    if os.path.isdir(path):
+        for file in os.listdir(path):
+            videos.extend(collect_videos(os.path.join(path, file)))
+        return videos
+    elif os.path.splitext(path)[1].lower() in [
+        ".mp4",
+        ".avi",
+        ".rmvb",
+        ".wmv",
+        ".mov",
+        ".mkv",
+        ".webm",
+        ".iso",
+        ".mpg",
+        ".m4v",
+    ]:
+        return [path]
+    else:
+        return []
+
+
+def filter_no_hard_link_path(paths):
+    filter_list = []
+    for path in paths:
+        if os.stat(path).st_nlink < 2:
+            filter_list.append(path)
+    return filter_list
+
+def mdc_a_jiang():
+    _LOGGER.info("开始执行Ajiang MDC")
+    global path
+    paths = collect_videos(path)
+    filter_paths = filter_no_hard_link_path(paths)
+    _LOGGER.info(f"需要整理的影片:{[p for p in filter_paths]}")
+    for filter_path in filter_paths:
+        libmdc_ng.main(filter_path, '/video/links/学习资料/整理')
+    _LOGGER.info("整理完成")
 
 # 指令1
 # 更新榜单,新晋番号将进入想看列表
