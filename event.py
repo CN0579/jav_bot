@@ -78,12 +78,7 @@ def config_changed(config: Dict[str, Any]):
 def task():
     time.sleep(random.randint(1, 3600))
     update_top_rank()
-    if need_mdc:
-        _LOGGER.info("等待所有种子下载完成")
-        t = threading.Thread(target=wait_all_torrent_completed, args=('jav_bot', 60,))
-        t.start()
-        return
-
+    
 
 def wait_all_torrent_completed(name, sleep_second):
     downloading_torrents = list_downloading_torrents(client_name=client_name)
@@ -155,9 +150,14 @@ def update_top_rank():
     download_code_list = fetch_un_download_code()
     if download_code_list:
         push_new_download_msg(download_code_list)
-    _LOGGER.error("精品科目,执行结束")
+    _LOGGER.error("更新榜单完成")
+    if need_mdc:
+        _LOGGER.info("等待所有种子下载完成")
+        t = threading.Thread(target=wait_all_torrent_completed, args=('jav_bot', 60,))
+        t.start()
+        return
 
-
+ 
 # 指令2
 # 将指定的番号加入想看列表
 # 从馒头爬取资源并下载
