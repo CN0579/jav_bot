@@ -93,7 +93,7 @@ def wait_all_torrent_completed(name, sleep_second):
         wait_all_torrent_completed(name, sleep_second)
     else:
         _LOGGER.info(f"线程{name}:所有种子下载完成，开始执行MDC")
-        mdc_a_jiang()
+        mdc()
 
 
 def mdc():
