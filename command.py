@@ -41,28 +41,6 @@ def download(
     return PluginCommandResponse(True, f'下载指定番号成功')
 
 
-@plugin.command(name='hard_link', title='硬链', desc='硬链工具', icon='',
-                        run_in_background=True)
-def hard_link(
-        ctx: PluginCommandContext,
-        content_path: ArgSchema(ArgType.String, '源文件/目录路径', ''),
-        hard_link_dir: ArgSchema(ArgType.String, '硬链接目录', ''),
-        content_rename: ArgSchema(ArgType.String, '文件或目录重命名', '传空则默认源文件/目录名称')):
-    hard_link_tool(content_path, hard_link_dir, content_rename)
-    return PluginCommandResponse(True, f'硬链完成')
 
 
 
-def hard_link_tool(content_path, hard_link_dir, content_rename):
-    hard_link_dir = hard_link_dir.strip()
-    hard_link_dir = hard_link_dir.rstrip("\\")
-    if not os.path.exists(hard_link_dir):
-        os.makedirs(hard_link_dir)
-    basename = os.path.basename(content_path)
-    if content_rename:
-        basename = content_rename
-    hard_link_path = f"{hard_link_dir.rstrip('/')}/{basename}"
-    if os.path.isdir(content_path):
-        shutil.copytree(content_path, hard_link_path, copy_function=os.link)
-    if os.path.isfile(content_path):
-        os.link(content_path, hard_link_path)
