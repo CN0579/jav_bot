@@ -1,5 +1,6 @@
 from mbot.external.downloadclient import DownloadClientManager, DownloadClient
 import yaml
+from .sql import *
 
 download_manager = DownloadClientManager()
 
@@ -45,4 +46,28 @@ def list_downloading_torrents(client_name):
         for torrent_hash in downloading_torrents:
             torrents.append(downloading_torrents[torrent_hash])
         return torrents
+    return None
+
+
+def torrent_hash(client_name, torrent_file):
+    current_client = get_client(client_name)
+    if current_client:
+        torrent_file_hash = current_client.info_hash(torrent_file)
+        return torrent_file_hash
+    return None
+
+
+def get_by_hash(client_name, torrent_file_hash):
+    current_client = get_client(client_name)
+    if current_client:
+        torrent = current_client.get_by_hash(torrent_file_hash)
+        return torrent
+    return None
+
+
+def get_torrent_by_torrent_path(client_name, torrent_file):
+    torrent_file_hash = torrent_hash(client_name, torrent_file)
+    if torrent_file_hash:
+        torrent = get_by_hash(client_name, torrent_file_hash)
+        return torrent
     return None

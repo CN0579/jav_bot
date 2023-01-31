@@ -15,6 +15,7 @@ from .sql import *
 from .scraper import *
 from .download import *
 from . import libmdc_ng
+from .tools import *
 
 _LOGGER = logging.getLogger(__name__)
 server = mbot_api
@@ -33,12 +34,13 @@ category = None
 message_to_uid: typing.List[int] = []
 client_name = ''
 need_mdc = False
+hard_link_dir = ''
 pic_url = 'https://api.r10086.com/img-api.php?type=%E6%9E%81%E5%93%81%E7%BE%8E%E5%A5%B3%E5%9B%BE%E7%89%87'
 
 
 def init_config(config):
     global path, proxies, torrent_folder, jav_cookie, ua, category, \
-        message_to_uid, client_name, need_mdc, pic_url
+        message_to_uid, client_name, need_mdc, pic_url, hard_link_dir
     if config.get('path'):
         path = config.get('path')
     if config.get('proxy'):
@@ -59,7 +61,8 @@ def init_config(config):
     need_mdc = config.get('need_mdc')
     if config.get('pic_url'):
         pic_url = config.get('pic_url')
-
+    if config.get('hard_link_dir'):
+        hard_link_dir = config.get('hard_link_dir')
 
 @plugin.after_setup
 def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
@@ -78,7 +81,7 @@ def config_changed(config: Dict[str, Any]):
 def task():
     time.sleep(random.randint(1, 3600))
     update_top_rank()
-    
+
 
 def wait_all_torrent_completed(name, sleep_second):
     downloading_torrents = list_downloading_torrents(client_name=client_name)
@@ -130,6 +133,7 @@ def filter_no_hard_link_path(paths):
             filter_list.append(path)
     return filter_list
 
+
 def mdc_a_jiang():
     _LOGGER.info("开始执行Ajiang MDC")
     global path
@@ -139,6 +143,7 @@ def mdc_a_jiang():
     for filter_path in filter_paths:
         libmdc_ng.main(filter_path, '/video/links/学习资料/整理')
     _LOGGER.info("整理完成")
+
 
 # 指令1
 # 更新榜单,新晋番号将进入想看列表
@@ -151,13 +156,13 @@ def update_top_rank():
     if download_code_list:
         push_new_download_msg(download_code_list)
     _LOGGER.error("更新榜单完成")
-    if need_mdc:
-        _LOGGER.info("等待所有种子下载完成")
-        t = threading.Thread(target=wait_all_torrent_completed, args=('jav_bot', 60,))
-        t.start()
-        return
+    # if need_mdc:
+    #     _LOGGER.info("等待所有种子下载完成")
+    #     t = threading.Thread(target=wait_all_torrent_completed, args=('jav_bot', 60,))
+    #     t.start()
+    #     return
 
- 
+
 # 指令2
 # 将指定的番号加入想看列表
 # 从馒头爬取资源并下载
@@ -170,11 +175,11 @@ def download_by_codes(codes: str):
         _LOGGER.info(res)
         _LOGGER.info("等待10-20S继续操作")
         time.sleep(random.randint(10, 20))
-    if need_mdc:
-        _LOGGER.info("等待所有种子下载完成")
-        t = threading.Thread(target=wait_all_torrent_completed, args=('jav_bot', 30,))
-        t.start()
-        return
+    # if need_mdc:
+    #     _LOGGER.info("等待所有种子下载完成")
+    #     t = threading.Thread(target=wait_all_torrent_completed, args=('jav_bot', 30,))
+    #     t.start()
+    #     return
 
 
 # 将输入不规范的番号规范化返回
@@ -222,11 +227,44 @@ def download_by_code(code: str):
             chapter['download_path'] = path
             update_chapter(chapter)
             push_new_download_msg([code])
+            monitor_download_progress(torrent_path, 1)
             return f'已开始下载番号{code}'
         else:
             return '添加种子失败'
     else:
         return f'没用找到该番号{code}的种子,已保存到想看的科目列表'
+
+
+def monitor_download_progress(torrent_path, retry_time):
+    if need_mdc:
+        if retry_time > 3:
+            _LOGGER.info(f"重试三次没有取到种子,放弃监听{torrent_path}的种子")
+            return
+        torrent = get_torrent_by_torrent_path(client_name=client_name, torrent_file=torrent_path)
+        _LOGGER.info(f"开启监控种子:{torrent.name}的下载进度")
+        if torrent:
+            torrent_file_hash = torrent.hash
+            t = threading.Thread(target=wait_torrent_downloaded, args=(torrent_file_hash,))
+            t.start()
+        else:
+            _LOGGER.info(f"通过hash没取到种子,等待5S重试")
+            time.sleep(5)
+            monitor_download_progress(torrent_path, retry_time + 1)
+
+
+def wait_torrent_downloaded(torrent_file_hash: str):
+    torrent = get_by_hash(client_name=client_name, torrent_file_hash=torrent_file_hash)
+    progress = torrent.progress
+    _LOGGER.info(f"种子名:{torrent.name}当前的下载进度:{progress}%")
+    if int(progress == 100):
+        push_downloaded(torrent.name)
+        _LOGGER.info(f"种子名:{torrent.name}下载完成,开始硬链到目录{hard_link_dir}")
+        hard_link(torrent.content_path, hard_link_dir)
+        _LOGGER.info(f"种子名:{torrent.name}硬链完成,开始执行MDC")
+        mdc()
+    else:
+        time.sleep(45)
+        wait_torrent_downloaded(torrent_file_hash)
 
 
 # 保存新晋番号到想看列表
@@ -276,6 +314,11 @@ def push_new_download_msg(code_list):
     push_msg(title, content)
 
 
+def push_downloaded(torrent_name):
+    title = '有新的学习资料下载完成'
+    push_msg(title, torrent_name)
+
+
 # 获取未下载的番号
 # 从馒头爬取最佳资源下载
 def fetch_un_download_code():
@@ -300,6 +343,7 @@ def fetch_un_download_code():
                     chapter['download_path'] = path
                     update_chapter(chapter)
                     download_chapter.append(code)
+                    monitor_download_progress(torrent_path, 1)
                 else:
                     _LOGGER.error('添加种子失败')
             else:

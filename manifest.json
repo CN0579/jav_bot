@@ -38,6 +38,13 @@
       "defaultValue": false
     },
     {
+      "fieldName": "hard_link_dir",
+      "fieldType": "String",
+      "label": "硬链目录",
+      "helperText": "MDC模式下,必须配置与MDC一样的目录,否则刮削无法成功",
+      "defaultValue": ""
+    },
+    {
       "fieldName": "jav_cookie",
       "fieldType": "String",
       "label": "javlibrary的cookie",
