@@ -14,7 +14,7 @@ import logging
 from .sql import *
 from .scraper import *
 from .download import *
-from . import libmdc_ng
+from .mdc import *
 from .tools import *
 
 _LOGGER = logging.getLogger(__name__)
@@ -36,6 +36,7 @@ client_name = ''
 need_mdc = False
 hard_link_dir = ''
 pic_url = 'https://api.r10086.com/img-api.php?type=%E6%9E%81%E5%93%81%E7%BE%8E%E5%A5%B3%E5%9B%BE%E7%89%87'
+mdc_mode = 2
 
 
 def init_config(config):
@@ -64,6 +65,7 @@ def init_config(config):
     if config.get('hard_link_dir'):
         hard_link_dir = config.get('hard_link_dir')
 
+
 @plugin.after_setup
 def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
     init_config(config)
@@ -83,68 +85,6 @@ def task():
     update_top_rank()
 
 
-def wait_all_torrent_completed(name, sleep_second):
-    downloading_torrents = list_downloading_torrents(client_name=client_name)
-    filter_dl_torrents = list(filter(lambda x: x.save_path.rstrip('/') == path.rstrip('/'), downloading_torrents))
-    if len(filter_dl_torrents) > 0:
-        time.sleep(sleep_second)
-        wait_all_torrent_completed(name, sleep_second)
-    else:
-        _LOGGER.info(f"线程{name}:所有种子下载完成，开始执行MDC")
-        mdc()
-
-
-def mdc():
-    _LOGGER.info("开始执行MDC")
-    host = 'http://127.0.0.1'
-    port = server.config.web.port
-    url = f'{host}:{port}/api/plugins/mdc/start'
-    res = requests.post(url)
-    _LOGGER.info(res)
-
-
-def collect_videos(path):
-    videos = []
-    if os.path.isdir(path):
-        for file in os.listdir(path):
-            videos.extend(collect_videos(os.path.join(path, file)))
-        return videos
-    elif os.path.splitext(path)[1].lower() in [
-        ".mp4",
-        ".avi",
-        ".rmvb",
-        ".wmv",
-        ".mov",
-        ".mkv",
-        ".webm",
-        ".iso",
-        ".mpg",
-        ".m4v",
-    ]:
-        return [path]
-    else:
-        return []
-
-
-def filter_no_hard_link_path(paths):
-    filter_list = []
-    for path in paths:
-        if os.stat(path).st_nlink < 2:
-            filter_list.append(path)
-    return filter_list
-
-
-def mdc_a_jiang():
-    _LOGGER.info("开始执行Ajiang MDC")
-    global path
-    paths = collect_videos(path)
-    filter_paths = filter_no_hard_link_path(paths)
-    _LOGGER.info(f"需要整理的影片:{[p for p in filter_paths]}")
-    for filter_path in filter_paths:
-        libmdc_ng.main(filter_path, '/video/links/学习资料/整理')
-    _LOGGER.info("整理完成")
-
-
 # 指令1
 # 更新榜单,新晋番号将进入想看列表
 # 查询想看列表未下载的资源，并从馒头爬取资源进行下载
@@ -156,11 +96,6 @@ def update_top_rank():
     if download_code_list:
         push_new_download_msg(download_code_list)
     _LOGGER.error("更新榜单完成")
-    # if need_mdc:
-    #     _LOGGER.info("等待所有种子下载完成")
-    #     t = threading.Thread(target=wait_all_torrent_completed, args=('jav_bot', 60,))
-    #     t.start()
-    #     return
 
 
 # 指令2
@@ -175,29 +110,6 @@ def download_by_codes(codes: str):
         _LOGGER.info(res)
         _LOGGER.info("等待10-20S继续操作")
         time.sleep(random.randint(10, 20))
-    # if need_mdc:
-    #     _LOGGER.info("等待所有种子下载完成")
-    #     t = threading.Thread(target=wait_all_torrent_completed, args=('jav_bot', 30,))
-    #     t.start()
-    #     return
-
-
-# 将输入不规范的番号规范化返回
-def get_true_code(input_code: str):
-    code_list = input_code.split('-')
-    code = ''.join(code_list)
-    length = len(code)
-    index = length - 1
-    num = ''
-    all_number = '0123456789'
-    while index > -1:
-        s = code[index]
-        if s not in all_number:
-            break
-        num = s + num
-        index = index - 1
-    prefix = code[0:index + 1]
-    return (prefix + '-' + num).upper()
 
 
 #
@@ -258,10 +170,14 @@ def wait_torrent_downloaded(torrent_file_hash: str):
     _LOGGER.info(f"种子名:{torrent.name}当前的下载进度:{progress}%")
     if int(progress == 100):
         push_downloaded(torrent.name)
-        _LOGGER.info(f"种子名:{torrent.name}下载完成,开始硬链到目录{hard_link_dir}")
-        hard_link(torrent.content_path, hard_link_dir)
-        _LOGGER.info(f"种子名:{torrent.name}硬链完成,开始执行MDC")
-        mdc()
+        if mdc_mode == 1:
+            _LOGGER.info(f"种子名:{torrent.name}下载完成,开始硬链到目录{hard_link_dir}")
+            hard_link(torrent.content_path, hard_link_dir)
+            _LOGGER.info(f"种子名:{torrent.name}硬链完成,开始执行MDC")
+            mdc_sks()
+        if mdc_mode == 2:
+            _LOGGER.info(f"种子名:{torrent.name}下载完成,开始执行MDC")
+            mdc_aj(torrent.conten_path)
     else:
         time.sleep(45)
         wait_torrent_downloaded(torrent_file_hash)

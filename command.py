@@ -8,6 +8,7 @@ import logging
 from mbot.core.params import ArgSchema, ArgType
 from mbot.core.plugins import plugin, PluginCommandContext, PluginCommandResponse
 from .event import update_top_rank, download_by_codes
+from .mdc import mdc_aj
 from .sql import *
 
 server = mbot_api
@@ -42,5 +43,16 @@ def download(
 
 
 
-
+@plugin.command(name='mdc_test', title='mdc测试', desc='mdc测试',
+                        icon='',
+                        run_in_background=True)
+def mdc_test(
+        ctx: PluginCommandContext,
+        path: ArgSchema(ArgType.String, '刮削视频地址', '刮削视频地址')):
+    try:
+        mdc_aj(path)
+    except Exception as e:
+        _LOGGER.error(e, exc_info=True)
+        return PluginCommandResponse(False, f'mdc测试成功')
+    return PluginCommandResponse(True, f'mdc测试失败')
 
