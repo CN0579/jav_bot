@@ -16,6 +16,7 @@ from .scraper import *
 from .download import *
 from .mdc import *
 from .tools import *
+import configparser
 
 _LOGGER = logging.getLogger(__name__)
 server = mbot_api
@@ -36,7 +37,6 @@ client_name = ''
 need_mdc = False
 hard_link_dir = ''
 pic_url = 'https://api.r10086.com/img-api.php?type=%E6%9E%81%E5%93%81%E7%BE%8E%E5%A5%B3%E5%9B%BE%E7%89%87'
-mdc_mode = 2
 
 
 def init_config(config):
@@ -64,6 +64,18 @@ def init_config(config):
         pic_url = config.get('pic_url')
     if config.get('hard_link_dir'):
         hard_link_dir = config.get('hard_link_dir')
+    create_config_ini(config.get('proxy'), hard_link_dir)
+
+
+def create_config_ini(proxy, target_folder):
+    conf = configparser.ConfigParser()
+    conf['common'] = {'target_folder': f'"{hard_link_dir}"'}
+    conf['proxy'] = {'proxy': f'"{proxy}"'}
+    config_ini_path = '/data/plugins/jav_bot/config.ini'
+    if os.path.exists(config_ini_path):
+        os.remove(config_ini_path)
+    with open(config_ini_path, 'w') as cfg:
+        conf.write(cfg)
 
 
 @plugin.after_setup
@@ -170,14 +182,8 @@ def wait_torrent_downloaded(torrent_file_hash: str):
     _LOGGER.info(f"种子名:{torrent.name}当前的下载进度:{progress}%")
     if int(progress == 100):
         push_downloaded(torrent.name)
-        if mdc_mode == 1:
-            _LOGGER.info(f"种子名:{torrent.name}下载完成,开始硬链到目录{hard_link_dir}")
-            hard_link(torrent.content_path, hard_link_dir)
-            _LOGGER.info(f"种子名:{torrent.name}硬链完成,开始执行MDC")
-            mdc_sks()
-        if mdc_mode == 2:
-            _LOGGER.info(f"种子名:{torrent.name}下载完成,开始执行MDC")
-            mdc_aj(torrent.conten_path)
+        _LOGGER.info(f"种子名:{torrent.name}下载完成,开始执行MDC")
+        mdc_aj(torrent.content_path)
     else:
         time.sleep(45)
         wait_torrent_downloaded(torrent_file_hash)

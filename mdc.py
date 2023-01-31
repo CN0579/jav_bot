@@ -20,5 +20,5 @@ def mdc_aj(path):
     _LOGGER.info("开始执行MDC_aj")
     videos = collect_videos(path)
     adult_video = get_max_size_video(videos)
-    libmdc_ng.main(adult_video)
+    libmdc_ng.main(adult_video, '/data/plugins/jav_bot/config.ini')
     _LOGGER.info("整理完成")
