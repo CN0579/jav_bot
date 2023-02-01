@@ -117,13 +117,14 @@ def update_top_rank():
 # 从馒头爬取资源并下载
 def download_by_codes(codes: str):
     code_list = codes.split(',')
-    for code in code_list:
+    for index, code in enumerate(code_list):
         if not code:
             continue
         res = download_by_code(code)
         _LOGGER.info(res)
-        _LOGGER.info("等待10-20S继续操作")
-        time.sleep(random.randint(10, 20))
+        if index < len(code_list) - 1:
+            _LOGGER.info("等待10-20S继续操作")
+            time.sleep(random.randint(10, 20))
 
 
 #
@@ -191,7 +192,7 @@ def monitor_download_progress(torrent_path, retry_time):
 def wait_torrent_downloaded(torrent_file_hash: str):
     torrent = get_by_hash(client_name=client_name, torrent_file_hash=torrent_file_hash)
     if not torrent:
-        _LOGGER.info(f"种子名:{torrent.name}可能已被移除下载器,监听程序结束")
+        _LOGGER.info(f"种子名:{torrent.name}可能已被移出下载器,监听程序结束")
         return
     progress = torrent.progress
     _LOGGER.info(f"种子名:{torrent.name}当前的下载进度:{progress}%")
@@ -238,7 +239,7 @@ def fetch_un_download_code():
     chapters = list_un_download_chapter()
     _LOGGER.info(f"尚未下载的科目:{[chapter['chapter_code'] for chapter in chapters]}")
     download_chapter = []
-    for chapter in chapters:
+    for index, chapter in enumerate(chapters):
         code = chapter['chapter_code']
         torrents = grab_m_team(code)
         if torrents:
@@ -256,11 +257,12 @@ def fetch_un_download_code():
                 else:
                     _LOGGER.error('添加种子失败')
             else:
-                _LOGGER.info("没有正在做中的种子")
+                _LOGGER.info("没有有效的种子")
         else:
             _LOGGER.info(f"{code}:尚无资源")
-        _LOGGER.info("等待10-20S继续操作")
-        time.sleep(random.randint(10, 20))
+        if index < len(chapters) - 1:
+            _LOGGER.info("等待10-20S继续操作")
+            time.sleep(random.randint(10, 20))
     return download_chapter
 
 
