@@ -22,3 +22,18 @@ def mdc_aj(path):
     adult_video = get_max_size_video(videos)
     libmdc_ng.main(adult_video, '/data/plugins/jav_bot/config.ini')
     _LOGGER.info("整理完成")
+
+
+def is_hardlink(filepath):
+    sfs = os.stat(filepath)
+    return sfs.st_nlink > 1
+
+
+def mdc_command(path):
+    videos = collect_videos(path)
+    for video in videos:
+        if is_hardlink(video):
+            continue
+        if os.path.getsize(video) < 1024 * 1000:
+            continue
+        libmdc_ng.main(video, '/data/plugins/jav_bot/config.ini')

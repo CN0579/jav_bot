@@ -1,7 +1,7 @@
 import bs4
 import requests
 from mbot.openapi import mbot_api
-
+from mbot.common.numberutils import NumberUtils
 server = mbot_api
 
 
@@ -57,13 +57,13 @@ def grab_m_team(keyword):
             'leechers': leechers,
             'describe': describe
         }
-        weight = get_weight(title, describe, int(seeders))
+        weight = get_weight(title, describe, int(seeders), size)
         torrent['weight'] = weight
         torrents.append(torrent)
     return torrents
 
 
-def get_weight(title: str, describe: str, seeders: int):
+def get_weight(title: str, describe: str, seeders: int, size: str):
     cn_keywords = ['中字', '中文字幕', '色花堂', '字幕']
     weight = 0
     content = title + describe
@@ -73,6 +73,9 @@ def get_weight(title: str, describe: str, seeders: int):
             break
     weight = weight + seeders
     if seeders == 0:
+        weight = -1
+    mb_size = NumberUtils.trans_size_str_to_mb(size)
+    if mb_size > 10240:
         weight = -1
     return weight
 

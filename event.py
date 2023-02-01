@@ -82,8 +82,10 @@ def create_config_ini(proxy, target_folder):
 def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
     init_config(config)
     create_database()
+    create_download_record_table()
     if not os.path.exists(torrent_folder):
         os.mkdir(torrent_folder)
+    after_rebot()
 
 
 @plugin.config_changed
@@ -156,7 +158,16 @@ def download_by_code(code: str):
         else:
             return '添加种子失败'
     else:
-        return f'没用找到该番号{code}的种子,已保存到想看的科目列表'
+        return f'没有找到该番号{code}的种子,已保存到想看的科目列表'
+
+
+def after_rebot():
+    _LOGGER.info("重启服务器之后,将还在下载跟下载完成没有刮削的纳入监听")
+    download_records = list_downloading_record()
+    for record in download_records:
+        torrent_file_hash = record['torrent_hash']
+        t = threading.Thread(target=wait_torrent_downloaded, args=(torrent_file_hash,))
+        t.start()
 
 
 def monitor_download_progress(torrent_path, retry_time):
@@ -167,6 +178,7 @@ def monitor_download_progress(torrent_path, retry_time):
         torrent = get_torrent_by_torrent_path(client_name=client_name, torrent_file=torrent_path)
         _LOGGER.info(f"开启监控种子:{torrent.name}的下载进度")
         if torrent:
+            save_download_record(torrent)
             torrent_file_hash = torrent.hash
             t = threading.Thread(target=wait_torrent_downloaded, args=(torrent_file_hash,))
             t.start()
@@ -178,9 +190,13 @@ def monitor_download_progress(torrent_path, retry_time):
 
 def wait_torrent_downloaded(torrent_file_hash: str):
     torrent = get_by_hash(client_name=client_name, torrent_file_hash=torrent_file_hash)
+    if not torrent:
+        _LOGGER.info(f"种子名:{torrent.name}可能已被移除下载器,监听程序结束")
+        return
     progress = torrent.progress
     _LOGGER.info(f"种子名:{torrent.name}当前的下载进度:{progress}%")
     if int(progress == 100):
+        update_download_record(torrent_file_hash)
         push_downloaded(torrent.name)
         _LOGGER.info(f"种子名:{torrent.name}下载完成,开始执行MDC")
         mdc_aj(torrent.content_path)
@@ -210,35 +226,6 @@ def save_new_code():
             save_chapter(chapter)
             new_chapter.append(code)
     return new_chapter
-
-
-def push_msg(title, content):
-    for uid in message_to_uid:
-        server.notify.send_message_by_tmpl('{{title}}', '{{a}}', {
-            'title': title,
-            'a': content,
-            'link_url': '',
-            'pic_url': pic_url
-        }, to_uid=uid)
-
-
-# 有新的科目进入20大榜单
-def push_new_code_msg(code_list):
-    title = '有新的学习资料进入想看列表'
-    content = ','.join(code_list)
-    push_msg(title, content)
-
-
-# 想要的科目开始下载
-def push_new_download_msg(code_list):
-    title = '有新的学习资料开始下载'
-    content = ','.join(code_list)
-    push_msg(title, content)
-
-
-def push_downloaded(torrent_name):
-    title = '有新的学习资料下载完成'
-    push_msg(title, torrent_name)
 
 
 # 获取未下载的番号
@@ -275,3 +262,33 @@ def fetch_un_download_code():
         _LOGGER.info("等待10-20S继续操作")
         time.sleep(random.randint(10, 20))
     return download_chapter
+
+
+# 推送相关代码
+def push_msg(title, content):
+    for uid in message_to_uid:
+        server.notify.send_message_by_tmpl('{{title}}', '{{a}}', {
+            'title': title,
+            'a': content,
+            'link_url': '',
+            'pic_url': pic_url
+        }, to_uid=uid)
+
+
+# 有新的科目进入20大榜单
+def push_new_code_msg(code_list):
+    title = '有新的学习资料进入想看列表'
+    content = ','.join(code_list)
+    push_msg(title, content)
+
+
+# 想要的科目开始下载
+def push_new_download_msg(code_list):
+    title = '有新的学习资料开始下载'
+    content = ','.join(code_list)
+    push_msg(title, content)
+
+
+def push_downloaded(torrent_name):
+    title = '有新的学习资料下载完成'
+    push_msg(title, torrent_name)
