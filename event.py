@@ -69,8 +69,8 @@ def init_config(config):
 
 def create_config_ini(proxy, target_folder):
     conf = configparser.ConfigParser()
-    conf['common'] = {'target_folder': f'"{hard_link_dir}"'}
-    conf['proxy'] = {'proxy': f'"{proxy}"'}
+    conf['common'] = {'target_folder': target_folder}
+    conf['proxy'] = {'proxy': proxy}
     config_ini_path = '/data/plugins/jav_bot/config.ini'
     if os.path.exists(config_ini_path):
         os.remove(config_ini_path)
