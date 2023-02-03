@@ -39,7 +39,14 @@
     {
       "fieldName": "hard_link_dir",
       "fieldType": "String",
-      "label": "硬链目录/整理目录",
+      "label": "刮削成功目录",
+      "helperText": "开启刮削,请务必设置目录,资源整理默认硬链接方式",
+      "defaultValue": ""
+    },
+    {
+      "fieldName": "fail_folder",
+      "fieldType": "String",
+      "label": "刮削失败目录",
       "helperText": "开启刮削,请务必设置目录,资源整理默认硬链接方式",
       "defaultValue": ""
     },
@@ -50,7 +57,7 @@
       "helperText": "若遇到cloud flare,请设置cookie",
       "defaultValue": ""
     },
-     {
+    {
       "fieldName": "jav_bus_cookie",
       "fieldType": "String",
       "label": "jav_bus的cookie",

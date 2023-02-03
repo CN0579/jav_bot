@@ -1,3 +1,5 @@
+import configparser
+import datetime
 import os
 import logging
 import sys
@@ -33,12 +35,44 @@ def is_hardlink(filepath):
 
 
 def mdc_command(path):
+    conf = configparser.ConfigParser()
+    conf.read(config_path)
+    target_folder = conf.get('common', 'target_folder')
+    fail_folder = conf.get('common', 'fail_folder')
+    if not target_folder:
+        _LOGGER.error("没有设置刮削成功目录")
+        return
+    if not os.path.exists(target_folder):
+        os.makedirs(target_folder)
     mdc = get_mdc()
     if mdc:
         videos = collect_videos(path)
+        fail_videos = []
         for video in videos:
             if is_hardlink(video):
+                _LOGGER.error(f"文件{video},已存在硬链接，无法判断是否刮削，但是选择跳过刮削")
                 continue
-            if os.path.getsize(video) < 1024 * 1000:
+            if os.path.getsize(video) < 200 * 1024 * 1000:
+                _LOGGER.error(f"文件体积小于200M,跳过刮削")
                 continue
-            mdc(video, config_path)
+            try:
+                mdc(video, config_path)
+            except Exception as e:
+                _LOGGER.error(f"肥肠抱歉,文件{video}刮削失败")
+                fail_videos.append(video)
+                continue
+        write_fail_log(fail_videos, fail_folder)
+
+
+def write_fail_log(fail_videos, fail_folder):
+    if fail_folder:
+        _LOGGER.info("开始写入刮削失败的文件")
+        if not os.path.exists(fail_folder):
+            os.makedirs(fail_folder)
+        now_str = datetime.datetime.now().strftime('%Y年%m月%d日%H时%M分%S秒')
+        if not os.path.exists('fail'):
+            os.makedirs('fail')
+        note = open(f'{fail_folder}/{now_str}.txt', mode='a')
+        for video in fail_videos:
+            note.writelines(f"{video}\n")
+        note.close()

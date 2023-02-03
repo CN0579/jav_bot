@@ -39,11 +39,12 @@ client_name = ''
 need_mdc = False
 hard_link_dir = ''
 pic_url = 'https://api.r10086.com/img-api.php?type=%E6%9E%81%E5%93%81%E7%BE%8E%E5%A5%B3%E5%9B%BE%E7%89%87'
+fail_folder = ''
 
 
 def init_config(config):
     global path, proxies, torrent_folder, jav_cookie, ua, category, \
-        message_to_uid, client_name, need_mdc, pic_url, hard_link_dir, jav_bus_cookie
+        message_to_uid, client_name, need_mdc, pic_url, hard_link_dir, jav_bus_cookie, fail_folder
     if config.get('path'):
         path = config.get('path')
     if config.get('proxy'):
@@ -68,12 +69,14 @@ def init_config(config):
         pic_url = config.get('pic_url')
     if config.get('hard_link_dir'):
         hard_link_dir = config.get('hard_link_dir')
-    create_config_ini(config.get('proxy'), hard_link_dir)
+    if config.get('fail_folder'):
+        fail_folder = config.get('fail_folder')
+    create_config_ini(config.get('proxy'), hard_link_dir, fail_folder)
 
 
-def create_config_ini(proxy, target_folder):
+def create_config_ini(proxy, target_folder, failed_folder):
     conf = configparser.ConfigParser()
-    conf['common'] = {'target_folder': target_folder}
+    conf['common'] = {'target_folder': target_folder, 'fail_folder': failed_folder}
     conf['proxy'] = {'proxy': proxy}
     config_ini_path = f'{os.path.abspath(os.path.dirname(__file__))}/config.ini'
     if os.path.exists(config_ini_path):
