@@ -26,8 +26,10 @@ proxies = {
     'http': '',
     'https': '',
 }
-torrent_folder = '/data/plugins/jav_bot_torrents'
+plugin_folder = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+torrent_folder = f'{plugin_folder}/jav_bot_torrents'
 jav_cookie = ''
+jav_bus_cookie = ''
 ua = ''
 
 category = None
@@ -41,7 +43,7 @@ pic_url = 'https://api.r10086.com/img-api.php?type=%E6%9E%81%E5%93%81%E7%BE%8E%E
 
 def init_config(config):
     global path, proxies, torrent_folder, jav_cookie, ua, category, \
-        message_to_uid, client_name, need_mdc, pic_url, hard_link_dir
+        message_to_uid, client_name, need_mdc, pic_url, hard_link_dir, jav_bus_cookie
     if config.get('path'):
         path = config.get('path')
     if config.get('proxy'):
@@ -51,6 +53,8 @@ def init_config(config):
         }
     if config.get('jav_cookie'):
         jav_cookie = config.get('jav_cookie')
+    if config.get('jav_bus_cookie'):
+        jav_bus_cookie = config.get('jav_bus_cookie')
     if config.get('ua'):
         ua = config.get('ua')
     if config.get('category'):
@@ -71,7 +75,7 @@ def create_config_ini(proxy, target_folder):
     conf = configparser.ConfigParser()
     conf['common'] = {'target_folder': target_folder}
     conf['proxy'] = {'proxy': proxy}
-    config_ini_path = '/data/plugins/jav_bot/config.ini'
+    config_ini_path = f'{os.path.abspath(os.path.dirname(__file__))}/config.ini'
     if os.path.exists(config_ini_path):
         os.remove(config_ini_path)
     with open(config_ini_path, 'w') as cfg:
@@ -83,6 +87,7 @@ def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
     init_config(config)
     create_database()
     create_download_record_table()
+    create_actor_table()
     if not os.path.exists(torrent_folder):
         os.mkdir(torrent_folder)
     after_rebot()
@@ -97,6 +102,44 @@ def config_changed(config: Dict[str, Any]):
 def task():
     time.sleep(random.randint(1, 3600))
     update_top_rank()
+    subscribe_by_actor()
+
+
+def add_actor(keyword, start_date):
+    actor_grab = grab_jav_bus(keyword, jav_bus_cookie, ua, proxies)
+    flag = False
+    if actor_grab:
+        actor_url = actor_grab['actor_url']
+        actor_name = actor_grab['actor_name']
+        actor = get_actor_by_url(actor_url)
+        if actor:
+            flag = False
+            update_actor(actor['id'], start_date)
+            _LOGGER.info(f"{actor_name}已存在订阅的演员列表中")
+        else:
+            flag = True
+            actor = {
+                'actor_name': actor_name,
+                'actor_url': actor_url,
+                'start_date': start_date
+            }
+            save_actor(actor)
+            _LOGGER.info(f"{actor_name}订阅完成")
+        code_list = grab_actor(actor_url, jav_bus_cookie, ua, proxies, start_date)
+        if code_list:
+            codes = ','.join([code['code'] for code in code_list])
+            download_by_codes(codes=codes)
+    return flag
+
+
+def subscribe_by_actor():
+    actor_list = list_actor()
+    for actor in actor_list:
+        actor_url = actor['actor_url']
+        start_date = actor['start_date']
+        code_list = grab_actor(actor_url, jav_bus_cookie, ua, proxies, start_date)
+        codes = ','.join(code_list)
+        download_by_codes(codes=codes)
 
 
 # 指令1
@@ -146,18 +189,21 @@ def download_by_code(code: str):
     torrents = grab_m_team(code)
     if torrents:
         torrent = get_best_torrent(torrents)
-        torrent_path = download_torrent(code, torrent['download_url'], torrent_folder)
-        res = download(torrent_path, save_path=path, category=category, client_name=client_name)
-        if res:
-            chapter['size'] = torrent['size']
-            chapter['download_url'] = torrent['download_url']
-            chapter['download_path'] = path
-            update_chapter(chapter)
-            push_new_download_msg([code])
-            monitor_download_progress(torrent_path, 1)
-            return f'已开始下载番号{code}'
+        if torrent:
+            torrent_path = download_torrent(code, torrent['download_url'], torrent_folder)
+            res = download(torrent_path, save_path=path, category=category, client_name=client_name)
+            if res:
+                chapter['size'] = torrent['size']
+                chapter['download_url'] = torrent['download_url']
+                chapter['download_path'] = path
+                update_chapter(chapter)
+                push_new_download_msg([code])
+                monitor_download_progress(torrent_path, 1)
+                return f'已开始下载番号{code}'
+            else:
+                return '添加种子失败'
         else:
-            return '添加种子失败'
+            return '没有有效的种子'
     else:
         return f'没有找到该番号{code}的种子,已保存到想看的科目列表'
 

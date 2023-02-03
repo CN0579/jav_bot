@@ -50,6 +50,13 @@
       "helperText": "若遇到cloud flare,请设置cookie",
       "defaultValue": ""
     },
+     {
+      "fieldName": "jav_bus_cookie",
+      "fieldType": "String",
+      "label": "jav_bus的cookie",
+      "helperText": "若遇到cloud flare,请设置cookie",
+      "defaultValue": ""
+    },
     {
       "fieldName": "ua",
       "fieldType": "String",

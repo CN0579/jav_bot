@@ -1,28 +1,30 @@
-import requests
-from mbot.openapi import mbot_api
+import os
 import logging
+import sys
+
 from .tools import *
-from plugins.mdc_mbot_plugin import mdc_main
 
 _LOGGER = logging.getLogger(__name__)
-config_path = '/data/plugins/jav_bot/config.ini'
+config_path = f'{os.path.abspath(os.path.dirname(__file__))}/config.ini'
 
 
-def mdc_sks():
-    _LOGGER.info("开始执行MDC_sks")
-    host = 'http://127.0.0.1'
-    port = mbot_api.config.web.port
-    url = f'{host}:{port}/api/plugins/mdc/start'
-    res = requests.post(url)
-    _LOGGER.info(res)
+def get_mdc():
+    if 'plugins.mdc_mbot_plugin' not in sys.modules:
+        _LOGGER.error("mdc模块尚未安装，无法进行刮削整理")
+        return None
+    from plugins.mdc_mbot_plugin import mdc_main
+    _LOGGER.error("mdc模块已安装")
+    return mdc_main
 
 
 def mdc_aj(path):
-    _LOGGER.info("开始执行MDC_aj")
-    videos = collect_videos(path)
-    adult_video = get_max_size_video(videos)
-    mdc_main(adult_video, config_path)
-    _LOGGER.info("整理完成")
+    mdc = get_mdc()
+    if mdc:
+        _LOGGER.info("开始执行MDC")
+        videos = collect_videos(path)
+        adult_video = get_max_size_video(videos)
+        mdc(adult_video, config_path)
+        _LOGGER.info("整理完成")
 
 
 def is_hardlink(filepath):
@@ -31,10 +33,12 @@ def is_hardlink(filepath):
 
 
 def mdc_command(path):
-    videos = collect_videos(path)
-    for video in videos:
-        if is_hardlink(video):
-            continue
-        if os.path.getsize(video) < 1024 * 1000:
-            continue
-        mdc_main(video, config_path)
+    mdc = get_mdc()
+    if mdc:
+        videos = collect_videos(path)
+        for video in videos:
+            if is_hardlink(video):
+                continue
+            if os.path.getsize(video) < 1024 * 1000:
+                continue
+            mdc(video, config_path)

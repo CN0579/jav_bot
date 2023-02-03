@@ -6,8 +6,9 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
-db_path = '/data/plugins/jav_bot_db/jp_study.db'
-db_folder = '/data/plugins/jav_bot_db'
+plugin_folder = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+db_path = f'{plugin_folder}/jav_bot_db/jp_study.db'
+db_folder = f'{plugin_folder}/jav_bot_db'
 
 
 def dict_factory(cursor, row):
@@ -80,6 +81,120 @@ def create_download_record_table():
     except Exception as e:
         _LOGGER.error(str(e))
         return False
+    finally:
+        cur.close()
+        conn.close()
+
+
+def create_actor_table():
+    if not os.path.exists(db_folder):
+        os.makedirs(db_folder)
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    try:
+        sql = """CREATE TABLE actor (
+                    id integer primary key autoincrement,
+                    actor_name varchar(255) not null,
+                    actor_url varchar(255) not null,
+                    start_date varchar(255) not null
+                );"""
+        cur.execute(sql)
+        _LOGGER.info("create actor table success")
+        return True
+    except OperationalError as o:
+        _LOGGER.error(str(o))
+        pass
+        if str(o) == "table actor already exists":
+            return True
+        return False
+    except Exception as e:
+        _LOGGER.error(str(e))
+        return False
+    finally:
+        cur.close()
+        conn.close()
+
+
+def get_actor_by_url(actor_url):
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = dict_factory
+    cur = conn.cursor()
+    chapter = None
+    try:
+        sql = f"select * from actor where actor_url = '{actor_url}'"
+        cur.execute(sql)
+        chapter = cur.fetchone()
+        conn.commit()
+    except Exception as e:
+        _LOGGER.error(str(e))
+        return None
+    finally:
+        cur.close()
+        conn.close()
+        return chapter
+
+
+def update_actor(id, start_date):
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    try:
+        update_sql = f"update actor set start_date = '{start_date}' where id = {id}"
+        cur.execute(update_sql)
+        conn.commit()
+    except Exception as e:
+        _LOGGER.error(str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+
+def list_actor():
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = dict_factory
+    cur = conn.cursor()
+    chapters = []
+    try:
+        sql = f"select * from actor"
+        cur.execute(sql)
+        chapters = cur.fetchall()
+        conn.commit()
+    except Exception as e:
+        _LOGGER.error(str(e))
+        return []
+    finally:
+        cur.close()
+        conn.close()
+        return chapters
+
+
+def save_actor(data):
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    actor_name = data['actor_name']
+    actor_url = data['actor_url']
+    start_date = data['start_date']
+    try:
+        insert_sql = f"insert into actor(actor_name,actor_url,start_date) " \
+                     f"values" \
+                     f" ('{actor_name}','{actor_url}','{start_date}')"
+        cur.execute(insert_sql)
+        conn.commit()
+    except Exception as e:
+        _LOGGER.error(str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+
+def delete_actor(ids):
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    try:
+        delete_sql = f"delete from  actor where id in ({ids})"
+        cur.execute(delete_sql)
+        conn.commit()
+    except Exception as e:
+        _LOGGER.error(str(e))
     finally:
         cur.close()
         conn.close()

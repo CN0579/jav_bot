@@ -1,7 +1,12 @@
+import datetime
+import logging
+
 import bs4
 import requests
 from mbot.openapi import mbot_api
 from mbot.common.numberutils import NumberUtils
+
+_LOGGER = logging.getLogger(__name__)
 server = mbot_api
 
 
@@ -26,6 +31,46 @@ def grab_jav(page, jav_cookie, ua, proxies):
         }
         av_list.append(av)
     return av_list
+
+
+def grab_jav_bus(actor_name, jav_bus_cookie, ua, proxies):
+    url = f"https://www.javbus.com/searchstar/{actor_name}"
+    cookie_dict = str_cookies_to_dict(jav_bus_cookie)
+    headers = {'cookie': jav_bus_cookie, 'Referer': "https://www.javbus.com", }
+    if ua:
+        headers['User-Agent'] = ua
+    res = requests.get(url=url, proxies=proxies, headers=headers, cookies=cookie_dict)
+    soup = bs4.BeautifulSoup(res.text, 'html.parser')
+    actors = soup.select('a.avatar-box')
+    if len(actors) > 1:
+        _LOGGER.info("搜索出了多个演员,请输入更为详细的演员艺名")
+        return None
+    if len(actors) < 1:
+        _LOGGER.info("演员艺名错误")
+        return None
+    actor_url = actors[0].get('href')
+    actor_name = actors[0].select('div.photo-frame>img')[0].get('title')
+    return {'actor_url': actor_url, 'actor_name': actor_name}
+
+
+def grab_actor(actor_url, jav_bus_cookie, ua, proxies, start_date):
+    cookie_dict = str_cookies_to_dict(jav_bus_cookie)
+    headers = {'cookie': jav_bus_cookie, 'Referer': "https://www.javbus.com", }
+    if ua:
+        headers['User-Agent'] = ua
+    res = requests.get(url=actor_url, proxies=proxies, headers=headers, cookies=cookie_dict)
+    soup = bs4.BeautifulSoup(res.text, 'html.parser')
+    movie_list = soup.select('a.movie-box')
+    code_list = []
+    for item in movie_list:
+        date_list = item.select('date')
+        code_list.append({'date': date_list[1].text, 'code': date_list[0].text})
+    start_date_timestamp = int(datetime.datetime.strptime(start_date, "%Y-%m-%d").strftime('%Y%m%d'))
+    filter_list = list(
+        filter(
+            lambda x: int(datetime.datetime.strptime(x['date'], "%Y-%m-%d").strftime('%Y%m%d')) >= start_date_timestamp,
+            code_list))
+    return filter_list
 
 
 def grab_m_team(keyword):
