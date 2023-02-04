@@ -228,20 +228,25 @@ def download_by_code(code: str):
     if torrents:
         torrent = get_best_torrent(torrents)
         if torrent:
+            chapter['size'] = torrent['size']
+            chapter['download_url'] = torrent['download_url']
+            chapter['download_path'] = path
             torrent_path = download_torrent(code, torrent['download_url'], torrent_folder)
-            res = download(torrent_path, save_path=path, category=category, client_name=client_name)
-            if res:
-                chapter['size'] = torrent['size']
-                chapter['download_url'] = torrent['download_url']
-                chapter['download_path'] = path
-                update_chapter(chapter)
-                push_new_download_msg([code])
-                monitor_download_progress(torrent_path, 1)
-                return f'已开始下载番号{code}'
+            torrent_in_download = get_torrent_by_torrent_path(torrent_path)
+            if not torrent_in_download:
+                res = download(torrent_path, save_path=path, category=category, client_name=client_name)
+                if res:
+                    update_chapter(chapter)
+                    push_new_download_msg([code])
+                    monitor_download_progress(torrent_path, 1)
+                    return f'已开始下载番号{code}'
+                else:
+                    return f'添加种子失败,番号{code}'
             else:
-                return '添加种子失败'
+                update_chapter(chapter)
+                return f"{code}已存在下载器中,订阅番号将被标记为已下载"
         else:
-            return '没有有效的种子'
+            return f'{code}没有找到有效的种子'
     else:
         return f'没有找到该番号{code}的种子,已保存到想看的科目列表'
 
