@@ -57,7 +57,7 @@ def base_command(ctx: PluginCommandContext,
     if command == 'upgrade_plugin':
         upgrade_jav_bot()
     _LOGGER.info("更新完成")
-
+    return PluginCommandResponse(True, '')
 
 @plugin.command(name='subscribe_command', title='学习工具:订阅', desc='', icon='', run_in_background=True)
 def subscribe_command(

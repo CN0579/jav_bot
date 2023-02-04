@@ -109,7 +109,7 @@ def task():
     subscribe_by_actor()
 
 
-@plugin.task('task', '自动更新', cron_expression='30 * * * *')
+@plugin.task('task', '自动更新', cron_expression='40 * * * *')
 def upgrade_task():
     need_update = check_update(proxies=proxies)
     if need_update:
