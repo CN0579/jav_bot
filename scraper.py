@@ -1,5 +1,6 @@
 import datetime
 import logging
+import time
 
 import bs4
 import requests
@@ -8,6 +9,8 @@ from mbot.common.numberutils import NumberUtils
 
 _LOGGER = logging.getLogger(__name__)
 server = mbot_api
+
+jav_bus_urls = ['https://www.javbus.com', 'https://www.javsee.bar', 'https://www.seejav.icu', 'https://www.javsee.in']
 
 
 def grab_jav(page, jav_cookie, ua, proxies):
@@ -33,13 +36,33 @@ def grab_jav(page, jav_cookie, ua, proxies):
     return av_list
 
 
-def grab_jav_bus(actor_name, jav_bus_cookie, ua, proxies):
-    url = f"https://www.javbus.com/searchstar/{actor_name}"
+def grab_jav_bus_by_code(code, jav_bus_cookie, ua, proxies):
+    teacher_list = get_teacher_list(code, jav_bus_cookie, ua, proxies)
+    if teacher_list and len(teacher_list) == 1:
+        teacher = teacher_list[0]
+        return {'actor_url': teacher['url'], 'actor_name': teacher['name']}
+    if teacher_list and len(teacher_list) > 1:
+        _LOGGER.error("该番号抓取到多个老师，无法判断小明想要哪个老师教学")
+    if not teacher_list:
+        _LOGGER.error("没有爬取到该番号的信息，请检查番号是否正确")
+    return None
+
+
+def grab_jav_bus_by_name(actor_name, jav_bus_cookie, ua, proxies):
     cookie_dict = str_cookies_to_dict(jav_bus_cookie)
     headers = {'cookie': jav_bus_cookie, 'Referer': "https://www.javbus.com", }
     if ua:
         headers['User-Agent'] = ua
-    res = requests.get(url=url, proxies=proxies, headers=headers, cookies=cookie_dict)
+    for host in jav_bus_urls:
+        url = f"{host}/searchstar/{actor_name}"
+        try:
+            res = requests.get(url=url, proxies=proxies, headers=headers, cookies=cookie_dict)
+            break
+        except Exception as e:
+            continue
+    if not res:
+        _LOGGER.error("爬虫出错，检查网络")
+        return None
     soup = bs4.BeautifulSoup(res.text, 'html.parser')
     actors = soup.select('a.avatar-box')
     if len(actors) > 1:
@@ -54,6 +77,7 @@ def grab_jav_bus(actor_name, jav_bus_cookie, ua, proxies):
 
 
 def grab_actor(actor_url, jav_bus_cookie: str, ua, proxies, start_date):
+    time.sleep(5)
     if 'exitmad' not in jav_bus_cookie:
         jav_bus_cookie = f"exitmad=all;{jav_bus_cookie}"
     else:
@@ -62,7 +86,18 @@ def grab_actor(actor_url, jav_bus_cookie: str, ua, proxies, start_date):
     headers = {'cookie': jav_bus_cookie, 'Referer': "https://www.javbus.com", }
     if ua:
         headers['User-Agent'] = ua
-    res = requests.get(url=actor_url, proxies=proxies, headers=headers, cookies=cookie_dict)
+    star_codes = actor_url.split('/')
+    star_code = star_codes[len(star_codes) - 1]
+    for host in jav_bus_urls:
+        url = f"{host}/star/{star_code}"
+        try:
+            res = requests.get(url=url, proxies=proxies, headers=headers, cookies=cookie_dict)
+            break
+        except Exception as e:
+            continue
+    if not res:
+        _LOGGER.error("爬虫出错，检查网络")
+        return None
     soup = bs4.BeautifulSoup(res.text, 'html.parser')
     movie_list = soup.select('a.movie-box')
     code_list = []
@@ -78,7 +113,11 @@ def grab_actor(actor_url, jav_bus_cookie: str, ua, proxies, start_date):
     _LOGGER.info("对超过时间限定和带有VR标记的番号进行筛选")
     finally_list = []
     for item in filter_list:
-        teacher_num = get_teacher_num(item['code'], jav_bus_cookie, ua, proxies)
+        time.sleep(5)
+        teacher_list = get_teacher_list(item['code'], jav_bus_cookie, ua, proxies)
+        teacher_num = None
+        if teacher_list:
+            teacher_num = len(teacher_list)
         if teacher_num and teacher_num < 4:
             finally_list.append(item)
         if teacher_num and teacher_num > 3:
@@ -88,17 +127,30 @@ def grab_actor(actor_url, jav_bus_cookie: str, ua, proxies, start_date):
     return finally_list
 
 
-def get_teacher_num(code, jav_bus_cookie, ua, proxies):
-    code_url = f'https://www.javbus.com/{code}'
+def get_teacher_list(code, jav_bus_cookie, ua, proxies):
     cookie_dict = str_cookies_to_dict(jav_bus_cookie)
     headers = {'cookie': jav_bus_cookie, 'Referer': "https://www.javbus.com", }
     if ua:
         headers['User-Agent'] = ua
-    res = requests.get(url=code_url, proxies=proxies, headers=headers, cookies=cookie_dict)
+    for host in jav_bus_urls:
+        url = f"{host}/{code}"
+        try:
+            res = requests.get(url=url, proxies=proxies, headers=headers, cookies=cookie_dict)
+            break
+        except Exception as e:
+            continue
+    if not res:
+        _LOGGER.error("爬虫出错，检查网络")
+        return None
     soup = bs4.BeautifulSoup(res.text, 'html.parser')
     actor_list = soup.select('span.genre>a')
     if actor_list:
-        return len(actor_list)
+        teacher_list = []
+        for actor in actor_list:
+            name = actor.text
+            url = actor.get('href')
+            teacher_list.append({'name': name, 'url': url})
+            return teacher_list
     return None
 
 

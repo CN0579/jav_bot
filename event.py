@@ -108,8 +108,12 @@ def task():
     subscribe_by_actor()
 
 
-def add_actor(keyword, start_date):
-    actor_grab = grab_jav_bus(keyword, jav_bus_cookie, ua, proxies)
+def add_actor(keyword: str, start_date):
+    if len(keyword) == len(keyword.encode()):
+        true_code = get_true_code(keyword)
+        actor_grab = grab_jav_bus_by_code(true_code, jav_bus_cookie, ua, proxies)
+    else:
+        actor_grab = grab_jav_bus_by_name(keyword, jav_bus_cookie, ua, proxies)
     flag = False
     if actor_grab:
         actor_url = actor_grab['actor_url']

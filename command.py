@@ -88,8 +88,8 @@ def delete_wanted(
 @plugin.command(name='add_actor_wanted', title='订阅想看的老师', desc='', icon='', run_in_background=True)
 def add_actor_wanted(
         ctx: PluginCommandContext,
-        keyword: ArgSchema(ArgType.String, '老师名字', '完整填入上课老师名字,匹配到多个将不执行程序'),
-        start_date: ArgSchema(ArgType.String, '在此时间之后', '日期格式务必准确,例如:2023-01-01')
+        keyword: ArgSchema(ArgType.String, '老师名字/单人授课的科目', '完整填入老师名字或是科目名称,匹配到多个将不执行程序'),
+        start_date: ArgSchema(ArgType.String, '学习在此时间之后的科目', '日期格式务必准确,例如:2023-01-01')
 ):
     try:
         datetime.datetime.strptime(start_date, '%Y-%d-%m')
