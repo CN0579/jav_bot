@@ -98,6 +98,7 @@ def add_actor_wanted(
         return PluginCommandResponse(False, f'删除成功')
     try:
         add_actor(keyword, start_date)
+        _LOGGER.info('订阅想看的老师完成')
     except Exception as e:
         _LOGGER.error(e, exc_info=True)
         return PluginCommandResponse(False, f'删除成功')

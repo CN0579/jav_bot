@@ -53,7 +53,11 @@ def grab_jav_bus(actor_name, jav_bus_cookie, ua, proxies):
     return {'actor_url': actor_url, 'actor_name': actor_name}
 
 
-def grab_actor(actor_url, jav_bus_cookie, ua, proxies, start_date):
+def grab_actor(actor_url, jav_bus_cookie: str, ua, proxies, start_date):
+    if 'exitmad' not in jav_bus_cookie:
+        jav_bus_cookie = f"exitmad=all;{jav_bus_cookie}"
+    else:
+        jav_bus_cookie = jav_bus_cookie.replace('existmag=mag', 'existmag=all')
     cookie_dict = str_cookies_to_dict(jav_bus_cookie)
     headers = {'cookie': jav_bus_cookie, 'Referer': "https://www.javbus.com", }
     if ua:
@@ -68,9 +72,34 @@ def grab_actor(actor_url, jav_bus_cookie, ua, proxies, start_date):
     start_date_timestamp = int(datetime.datetime.strptime(start_date, "%Y-%m-%d").strftime('%Y%m%d'))
     filter_list = list(
         filter(
-            lambda x: int(datetime.datetime.strptime(x['date'], "%Y-%m-%d").strftime('%Y%m%d')) >= start_date_timestamp,
+            lambda x: int(datetime.datetime.strptime(x['date'], "%Y-%m-%d").strftime('%Y%m%d')) >= start_date_timestamp
+                      and 'VR' not in x['code'],
             code_list))
-    return filter_list
+    _LOGGER.info("对超过时间限定和带有VR标记的番号进行筛选")
+    finally_list = []
+    for item in filter_list:
+        teacher_num = get_teacher_num(item['code'], jav_bus_cookie, ua, proxies)
+        if teacher_num and teacher_num < 4:
+            finally_list.append(item)
+        if teacher_num and teacher_num > 3:
+            _LOGGER.info(f"{item['code']}检索到超过3名老师进行教学,小明应付不了")
+        if not teacher_num:
+            _LOGGER.info(f"{item['code']}没有检索到老师,可能爬虫出了问题")
+    return finally_list
+
+
+def get_teacher_num(code, jav_bus_cookie, ua, proxies):
+    code_url = f'https://www.javbus.com/{code}'
+    cookie_dict = str_cookies_to_dict(jav_bus_cookie)
+    headers = {'cookie': jav_bus_cookie, 'Referer': "https://www.javbus.com", }
+    if ua:
+        headers['User-Agent'] = ua
+    res = requests.get(url=code_url, proxies=proxies, headers=headers, cookies=cookie_dict)
+    soup = bs4.BeautifulSoup(res.text, 'html.parser')
+    actor_list = soup.select('span.genre>a')
+    if actor_list:
+        return len(actor_list)
+    return None
 
 
 def grab_m_team(keyword):
