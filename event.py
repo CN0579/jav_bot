@@ -179,7 +179,8 @@ def download_by_codes(codes: str):
 
 
 def upgrade_jav_bot():
-    upgrade_project(proxies=proxies)
+    upgrade_project(proxies=proxies, retry_time=1)
+
 
 #
 def download_by_code(code: str):
