@@ -62,7 +62,7 @@ def mdc(
     return PluginCommandResponse(True, f'一键刮削失败')
 
 
-@plugin.command(name='upgrade', title='在线升级学习工具', desc='',
+@plugin.command(name='upgrade', title='在线升级日语学习工具', desc='',
                 icon='',
                 run_in_background=True)
 def upgrade(
