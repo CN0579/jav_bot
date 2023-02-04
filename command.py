@@ -59,10 +59,11 @@ def base_command(ctx: PluginCommandContext,
     _LOGGER.info("更新完成")
     return PluginCommandResponse(True, '')
 
+
 @plugin.command(name='subscribe_command', title='学习工具:订阅', desc='', icon='', run_in_background=True)
 def subscribe_command(
         ctx: PluginCommandContext,
-        codes: ArgSchema(ArgType.String, '番号订阅', '输入番号,多个番号用英文逗号隔开', required=False),
+        codes: ArgSchema(ArgType.String, '番号订阅', '输入番号,多个番号用英文逗号隔开,若订阅教师，以下两个参数必传', required=False),
         keyword: ArgSchema(ArgType.String, '教师订阅-关键字', '输入教师姓名或是单人授课科目名', required=False),
         start_date: ArgSchema(ArgType.String, '教师订阅-时间限制', '日期格式务必准确,例如:2023-01-01', required=False)
 ):
@@ -75,6 +76,8 @@ def subscribe_command(
             _LOGGER.error("日期格式错误")
             return
         add_actor(keyword, start_date)
+    else:
+        _LOGGER.error("订阅教师,下面两个参数为必传项")
     _LOGGER.info("订阅完成")
     return PluginCommandResponse(True, '')
 
@@ -84,7 +87,8 @@ def delete_subscribe(
         ctx: PluginCommandContext,
         code_list: ArgSchema(ArgType.Enum, '选择想要删除的科目', '', enum_values=get_un_download_chapter,
                              multi_value=True, required=False),
-        actor_list: ArgSchema(ArgType.Enum, '选择想要删除的教师', '', enum_values=get_actors, multi_value=True, required=False)
+        actor_list: ArgSchema(ArgType.Enum, '选择想要删除的教师', '', enum_values=get_actors, multi_value=True,
+                              required=False)
 
 ):
     if code_list:

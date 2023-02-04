@@ -3,7 +3,7 @@
   "title": "学习工具",
   "author": "oreki",
   "description": "",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "requirements": [],
   "update_log": "1.修复指令BUG",
   "configField": [
