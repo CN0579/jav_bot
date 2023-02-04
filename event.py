@@ -17,6 +17,7 @@ from .download import *
 from .mdc import *
 from .tools import *
 import configparser
+from upgrade import *
 
 _LOGGER = logging.getLogger(__name__)
 server = mbot_api
@@ -176,6 +177,9 @@ def download_by_codes(codes: str):
             _LOGGER.info("等待10-20S继续操作")
             time.sleep(random.randint(10, 20))
 
+
+def upgrade_jav_bot():
+    upgrade_project(proxies=proxies)
 
 #
 def download_by_code(code: str):

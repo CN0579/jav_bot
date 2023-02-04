@@ -8,7 +8,7 @@ from mbot.openapi import mbot_api
 import logging
 from mbot.core.params import ArgSchema, ArgType
 from mbot.core.plugins import plugin, PluginCommandContext, PluginCommandResponse
-from .event import update_top_rank, download_by_codes, add_actor
+from .event import update_top_rank, download_by_codes, add_actor, upgrade_jav_bot
 from .mdc import mdc_command
 from .sql import *
 from mbot.core import MovieBot
@@ -60,6 +60,20 @@ def mdc(
         _LOGGER.error(e, exc_info=True)
         return PluginCommandResponse(False, f'一键刮削成功')
     return PluginCommandResponse(True, f'一键刮削失败')
+
+
+@plugin.command(name='upgrade', title='在线升级学习工具', desc='',
+                icon='',
+                run_in_background=True)
+def upgrade(
+        ctx: PluginCommandContext):
+    try:
+        upgrade_jav_bot()
+    except Exception as e:
+        _LOGGER.error(e, exc_info=True)
+        return PluginCommandResponse(False, f'在线升级学习工具成功')
+    return PluginCommandResponse(True, f'在线升级学习工具失败')
+
 
 
 def get_un_download_chapter():
