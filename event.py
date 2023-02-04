@@ -109,6 +109,25 @@ def task():
     subscribe_by_actor()
 
 
+@plugin.task('task', '自动更新', cron_expression='30 * * * *')
+def upgrade_task():
+    need_update = check_update(proxies=proxies)
+    if need_update:
+        old_manifest = get_manifest()
+        old_version = old_manifest['version']
+        if upgrade_jav_bot():
+            new_manifest = get_manifest()
+            new_version = new_manifest['version']
+            update_log = new_manifest['update_log']
+            push_upgrade_success(old_version, new_version, update_log)
+
+
+def get_manifest():
+    with open('manifest.json', 'r', encoding='utf-8') as fp:
+        json_data = load(fp)
+        return json_data
+
+
 def add_actor(keyword: str, start_date):
     if len(keyword) == len(keyword.encode()):
         true_code = get_true_code(keyword)
@@ -179,7 +198,7 @@ def download_by_codes(codes: str):
 
 
 def upgrade_jav_bot():
-    upgrade_project(proxies=proxies, retry_time=1)
+    return upgrade_project(proxies=proxies, retry_time=1)
 
 
 #
@@ -352,3 +371,13 @@ def push_new_download_msg(code_list):
 def push_downloaded(torrent_name):
     title = '有新的学习资料下载完成'
     push_msg(title, torrent_name)
+
+
+def push_upgrade_success(old_version, new_version, update_log):
+    title = '日语学习工具更新了'
+    content = f'当前版本:v{old_version}\n' \
+              f'新版本:v{new_version}\n' \
+              f'更新内容如下:\n' \
+              f'{update_log}\n' \
+              f'备注:新版本需在重启容器之后才会生效'
+    push_msg(title, content)

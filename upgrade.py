@@ -5,6 +5,7 @@ import zipfile
 
 import requests
 import logging
+from json import load
 
 _LOGGER = logging.getLogger(__name__)
 download_url = 'https://github.com/or3ki/jav_bot/archive/refs/heads/master.zip'
@@ -12,12 +13,13 @@ plugin_folder = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 zip_path = f"{plugin_folder}/jav_bot.zip"
 extract_path = f"{plugin_folder}/jav_bot_new_{str(round(datetime.datetime.now().timestamp()))}"
 dst = f"{plugin_folder}/jav_bot"
+manifest_url = 'https://raw.githubusercontent.com/or3ki/jav_bot/master/manifest.json'
 
 
 def upgrade_project(proxies, retry_time):
     if retry_time > 3:
         _LOGGER.error("尝试拉取项目3次失败,在线更新学习工具失败")
-        return
+        return False
     try:
         res = requests.get(download_url, proxies=proxies)
     except Exception as e:
@@ -34,6 +36,7 @@ def upgrade_project(proxies, retry_time):
     shutil.move(plugin_path, dst)
     os.remove(zip_path)
     shutil.rmtree(extract_path)
+    return True
 
 
 def find_path(path, filename):
@@ -53,3 +56,15 @@ def find_path(path, filename):
             if f.lower() == filename:
                 return fp
     return
+
+
+def check_update(proxies):
+    with open('manifest.json', 'r', encoding='utf-8') as fp:
+        json_data = load(fp)
+        local_version = json_data['version']
+    res = requests.get(manifest_url, proxies=proxies)
+    json = res.json()
+    latest_version = json['version']
+    if local_version != latest_version:
+        return True
+    return False

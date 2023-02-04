@@ -5,6 +5,7 @@
   "description": "",
   "version": ".beta",
   "requirements": [],
+  "update_log": "1.新增自动更新功能\n2.对插件指令进行整合",
   "configField": [
     {
       "fieldName": "proxy",

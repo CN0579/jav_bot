@@ -28,6 +28,27 @@ def get_base_commands():
     return commands
 
 
+def get_un_download_chapter():
+    chapters = list_un_download_chapter()
+    enum_data = [{'value': chapter['id'], 'name': chapter['chapter_code']} for chapter in chapters]
+    return enum_data
+
+
+def get_actors():
+    actor_list = list_actor()
+    enum_data = [{'value': actor['id'], 'name': f"{actor['actor_name']}-{actor['start_date']}"} for actor in actor_list]
+    return enum_data
+
+
+@plugin.command(name='mdc', title='一键刮削', desc='刮削目录为插件中配置的目录', icon='', run_in_background=True)
+def mdc(
+        ctx: PluginCommandContext,
+        path: ArgSchema(ArgType.String, '刮削路径', '')):
+    mdc_command(path)
+    _LOGGER.info("一键刮削完成")
+    return PluginCommandResponse(True, '')
+
+
 @plugin.command(name='base_command', title='学习工具:更新', desc='', icon='', run_in_background=True)
 def base_command(ctx: PluginCommandContext,
                  command: ArgSchema(ArgType.Enum, '选择操作', '', enum_values=get_base_commands, multi_value=False)):
@@ -36,6 +57,7 @@ def base_command(ctx: PluginCommandContext,
     if command == 'upgrade_plugin':
         upgrade_jav_bot()
     _LOGGER.info("更新完成")
+
 
 @plugin.command(name='subscribe_command', title='学习工具:订阅', desc='', icon='', run_in_background=True)
 def subscribe_command(
@@ -57,33 +79,11 @@ def subscribe_command(
     return PluginCommandResponse(True, '')
 
 
-@plugin.command(name='mdc', title='一键刮削', desc='刮削目录为插件中配置的目录',
-                icon='',
-                run_in_background=True)
-def mdc(
+@plugin.command(name='delete_subscribe', title='学习工具:数据', desc='', icon='', run_in_background=True)
+def delete_subscribe(
         ctx: PluginCommandContext,
-        path: ArgSchema(ArgType.String, '刮削路径', '')):
-    mdc_command(path)
-    _LOGGER.info("一键刮削完成")
-    return PluginCommandResponse(True, '')
-
-
-def get_un_download_chapter():
-    chapters = list_un_download_chapter()
-    enum_data = [{'value': chapter['id'], 'name': chapter['chapter_code']} for chapter in chapters]
-    return enum_data
-
-
-def get_actors():
-    actor_list = list_actor()
-    enum_data = [{'value': actor['id'], 'name': f"{actor['actor_name']}-{actor['start_date']}"} for actor in actor_list]
-    return enum_data
-
-
-@plugin.command(name='delete_wanted', title='学习工具:数据', desc='', icon='', run_in_background=True)
-def delete_wanted(
-        ctx: PluginCommandContext,
-        code_list: ArgSchema(ArgType.Enum, '选择想要删除的科目', '', enum_values=get_un_download_chapter, multi_value=True),
+        code_list: ArgSchema(ArgType.Enum, '选择想要删除的科目', '', enum_values=get_un_download_chapter,
+                             multi_value=True),
         actor_list: ArgSchema(ArgType.Enum, '选择想要删除的教师', '', enum_values=get_actors, multi_value=True)
 
 ):
