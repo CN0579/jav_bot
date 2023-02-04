@@ -232,7 +232,7 @@ def download_by_code(code: str):
             chapter['download_url'] = torrent['download_url']
             chapter['download_path'] = path
             torrent_path = download_torrent(code, torrent['download_url'], torrent_folder)
-            torrent_in_download = get_torrent_by_torrent_path(torrent_path)
+            torrent_in_download = get_torrent_by_torrent_path(client_name=client_name, torrent_file=torrent_path)
             if not torrent_in_download:
                 res = download(torrent_path, save_path=path, category=category, client_name=client_name)
                 if res:
@@ -243,6 +243,7 @@ def download_by_code(code: str):
                 else:
                     return f'添加种子失败,番号{code}'
             else:
+                monitor_download_progress(torrent_path, 1)
                 update_chapter(chapter)
                 return f"{code}已存在下载器中,订阅番号将被标记为已下载"
         else:
@@ -334,19 +335,26 @@ def fetch_un_download_code():
         if torrents:
             torrent = get_best_torrent(torrents)
             if torrent:
+                chapter['size'] = torrent['size']
+                chapter['download_url'] = torrent['download_url']
+                chapter['download_path'] = path
                 torrent_path = download_torrent(code, torrent['download_url'], torrent_folder)
-                res = download(torrent_path, save_path=path, category=category, client_name=client_name)
-                if res:
-                    chapter['size'] = torrent['size']
-                    chapter['download_url'] = torrent['download_url']
-                    chapter['download_path'] = path
+                torrent_in_download = get_torrent_by_torrent_path(client_name=client_name, torrent_file=torrent_path)
+                if not torrent_in_download:
+                    res = download(torrent_path, save_path=path, category=category, client_name=client_name)
+                    if res:
+                        update_chapter(chapter)
+                        download_chapter.append(code)
+                        monitor_download_progress(torrent_path, 1)
+                    else:
+                        _LOGGER.error(f'添加种子失败,番号{code}')
+                else:
                     update_chapter(chapter)
                     download_chapter.append(code)
                     monitor_download_progress(torrent_path, 1)
-                else:
-                    _LOGGER.error('添加种子失败')
+                    _LOGGER.info(f"{code}已存在下载器中,订阅番号将被标记为已下载")
             else:
-                _LOGGER.info("没有有效的种子")
+                _LOGGER.info("{}没有有效的种子")
         else:
             _LOGGER.info(f"{code}:尚无资源")
         if index < len(chapters) - 1:

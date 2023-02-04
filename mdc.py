@@ -25,8 +25,15 @@ def mdc_aj(path):
         _LOGGER.info("开始执行MDC")
         videos = collect_videos(path)
         adult_video = get_max_size_video(videos)
-        mdc(adult_video, config_path)
-        _LOGGER.info("整理完成")
+        try:
+            mdc(adult_video, config_path)
+            _LOGGER.error(f"{adult_video}整理成功")
+        except Exception as e:
+            conf = configparser.ConfigParser()
+            conf.read(config_path)
+            fail_folder = conf.get('common', 'fail_folder')
+            write_fail_log(fail_videos=[adult_video], fail_folder=fail_folder)
+            _LOGGER.error(f"{adult_video}整理失败")
 
 
 def is_hardlink(filepath):
