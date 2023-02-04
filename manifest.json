@@ -3,9 +3,9 @@
   "title": "学习工具",
   "author": "oreki",
   "description": "",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "requirements": [],
-  "update_log": "1.修复指令BUG",
+  "update_log": "1.修改指令描述",
   "configField": [
     {
       "fieldName": "proxy",

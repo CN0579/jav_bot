@@ -23,7 +23,7 @@ module_name = f"{namespace}.{file_name}"
 def get_base_commands():
     commands = [
         {'name': '更新TOP20榜单', 'value': 'update_rank'},
-        {'name': '插件升级', 'value': 'upgrade_plugin'},
+        {'name': '插件升级,完成后需重启容器', 'value': 'upgrade_plugin'},
     ]
     return commands
 
