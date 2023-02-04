@@ -17,7 +17,7 @@ from .download import *
 from .mdc import *
 from .tools import *
 import configparser
-from upgrade import *
+from .upgrade import *
 
 _LOGGER = logging.getLogger(__name__)
 server = mbot_api
