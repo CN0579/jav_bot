@@ -3,7 +3,7 @@
   "title": "学习工具",
   "author": "oreki",
   "description": "",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "requirements": [],
   "update_log": "1.新增自动更新功能\n2.对插件指令进行整合",
   "configField": [
