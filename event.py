@@ -110,17 +110,23 @@ def task():
     subscribe_by_actor()
 
 
-@plugin.task('auto_upgrade', '自动更新', cron_expression='50 * * * *')
+@plugin.task('auto_upgrade', '自动更新', cron_expression='5 * * * *')
 def upgrade_task():
+    _LOGGER.info("jav_bot开始检查更新")
     need_update = check_update(proxies=proxies)
+    if need_update:
+        _LOGGER.info("jav_bot检测到新的版本,开始执行更新")
     if need_update:
         old_manifest = get_manifest()
         old_version = old_manifest['version']
         if upgrade_jav_bot():
+            _LOGGER.info("执行更新成功")
             new_manifest = get_manifest()
             new_version = new_manifest['version']
             update_log = new_manifest['update_log']
             push_upgrade_success(old_version, new_version, update_log)
+        else:
+            _LOGGER.info("执行更新失败")
 
 
 def get_manifest():
