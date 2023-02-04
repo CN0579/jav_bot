@@ -376,8 +376,8 @@ def push_downloaded(torrent_name):
 
 def push_upgrade_success(old_version, new_version, update_log):
     title = '日语学习工具更新了'
-    content = f'当前版本:v{old_version}\n' \
-              f'新版本:v{new_version}\n' \
+    content = f'当前版本:V.{old_version}\n' \
+              f'新版本:V.{new_version}\n' \
               f'更新内容如下:\n' \
               f'{update_log}\n' \
               f'备注:新版本需在重启容器之后才会生效'
