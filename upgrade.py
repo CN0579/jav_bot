@@ -59,7 +59,7 @@ def find_path(path, filename):
 
 
 def check_update(proxies):
-    with open('manifest.json', 'r', encoding='utf-8') as fp:
+    with open(f'{dst}/manifest.json', 'r', encoding='utf-8') as fp:
         json_data = load(fp)
         local_version = json_data['version']
     res = requests.get(manifest_url, proxies=proxies)

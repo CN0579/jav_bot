@@ -29,6 +29,7 @@ proxies = {
 }
 plugin_folder = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 torrent_folder = f'{plugin_folder}/jav_bot_torrents'
+jav_bot_plugin_path = os.path.abspath(os.path.dirname(__file__))
 jav_cookie = ''
 jav_bus_cookie = ''
 ua = ''
@@ -109,7 +110,7 @@ def task():
     subscribe_by_actor()
 
 
-@plugin.task('auto_upgrade', '自动更新', cron_expression='40 * * * *')
+@plugin.task('auto_upgrade', '自动更新', cron_expression='46 * * * *')
 def upgrade_task():
     need_update = check_update(proxies=proxies)
     if need_update:
@@ -123,7 +124,7 @@ def upgrade_task():
 
 
 def get_manifest():
-    with open('manifest.json', 'r', encoding='utf-8') as fp:
+    with open(f'{jav_bot_plugin_path}/manifest.json', 'r', encoding='utf-8') as fp:
         json_data = load(fp)
         return json_data
 
