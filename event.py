@@ -216,12 +216,14 @@ def download_by_code(code: str):
             'overview': '手动添加番号,暂时无法获取简介',
             'img': ''
         }
-        save_chapter(chapter)
+        chapter = save_chapter(chapter)
         push_new_code_msg([code])
-    chapter = get_chapter(code)
     if chapter['status'] == 1:
         return f'你已经下载过番号{code}'
-
+    if find_video_from_library(code):
+        chapter['status'] = 1
+        set_downloaded(chapter['id'])
+        return f'媒体库已存在番号{code}'
     torrents = grab_m_team(code)
     if torrents:
         torrent = get_best_torrent(torrents)
@@ -306,14 +308,23 @@ def save_new_code():
         overview = av['overview']
         img = av['img']
         chapter = get_chapter(code)
+        code_exist = find_video_from_library(code)
         if not chapter:
             chapter = {
                 'code': code,
                 'overview': overview,
                 'img': img
             }
-            save_chapter(chapter)
-            new_chapter.append(code)
+            chapter = save_chapter(chapter)
+            if not code_exist:
+                new_chapter.append(code)
+            else:
+                _LOGGER.info(f"媒体库已存在番号{code},将标记为下载完成")
+                set_downloaded(chapter['id'])
+        else:
+            if code_exist:
+                _LOGGER.info(f"媒体库已存在番号{code},将标记为下载完成")
+                set_downloaded(chapter['id'])
     return new_chapter
 
 
@@ -359,6 +370,15 @@ def fetch_un_download_code():
             _LOGGER.info("等待10-20S继续操作")
             time.sleep(random.randint(10, 20))
     return download_chapter
+
+
+def find_video_from_library(code: str):
+    videos = collect_videos(hard_link_dir)
+    video_name_list = [os.path.split(video)[0] for video in videos]
+    for video_name in video_name_list:
+        if video_name.startswith(code):
+            return True
+    return False
 
 
 # 推送相关代码

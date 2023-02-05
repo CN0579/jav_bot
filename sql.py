@@ -218,6 +218,7 @@ def save_chapter(data):
     finally:
         cur.close()
         conn.close()
+    return get_chapter(code)
 
 
 def get_chapter(code):
@@ -237,6 +238,22 @@ def get_chapter(code):
         cur.close()
         conn.close()
         return chapter
+
+
+def set_downloaded(id):
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = dict_factory
+    cur = conn.cursor()
+    update_time = int(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
+    try:
+        update_sql = f"update chapter set status=1,update_time = {update_time} where id = {id}"
+        cur.execute(update_sql)
+        conn.commit()
+    except Exception as e:
+        _LOGGER.error(str(e))
+    finally:
+        cur.close()
+        conn.close()
 
 
 def update_chapter(data):

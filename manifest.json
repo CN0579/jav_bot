@@ -3,9 +3,9 @@
   "title": "学习工具",
   "author": "oreki",
   "description": "",
-  "version": "0.3.5",
+  "version": "0.3.7",
   "requirements": [],
-  "update_log": "1.修复加载顺序引起的bug",
+  "update_log": "订阅番号将比对媒体库，已存在的不再下载,直接标记为已下载",
   "configField": [
     {
       "fieldName": "proxy",
