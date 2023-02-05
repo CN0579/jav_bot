@@ -90,11 +90,6 @@ def create_config_ini(proxy, target_folder, failed_folder):
 @plugin.after_setup
 def after_setup(plugin_meta: PluginMeta, config: Dict[str, Any]):
     init_config(config)
-    create_database()
-    create_download_record_table()
-    create_actor_table()
-    if not os.path.exists(torrent_folder):
-        os.mkdir(torrent_folder)
     after_rebot()
 
 
