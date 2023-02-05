@@ -1,0 +1,71 @@
+import os
+import shutil
+import zipfile
+from datetime import datetime
+import logging
+from json import load
+from typing import Dict, Optional
+
+import requests
+
+_LOGGER = logging.getLogger(__name__)
+
+
+class PluginTools:
+    download_url: str
+    manifest_url: str
+    plugin_folder_name: str
+    proxies: Dict[str, str]
+    plugins_folder_path: str = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+    zip_path: str = f"{plugins_folder_path}/{plugin_folder_name}.zip"
+    plugin_path = f"{plugins_folder_path}/{plugin_folder_name}"
+    extract_path: str = f"{plugins_folder_path}/{plugin_folder_name}_new_"
+    manifest_path: str = f"{plugin_path}/manifest.json"
+
+    def __init__(self, download_url: str, manifest_url: str, plugin_folder_name: str, proxies: Optional[Dict] = None):
+        self.download_url = download_url
+        self.manifest_url = manifest_url
+        self.plugin_folder_name = plugin_folder_name
+        self.proxies = proxies
+
+    def download_plugin(self, retry_time: int = 1):
+        if retry_time > 3:
+            _LOGGER.error("尝试拉取项目3次失败,在线更新学习工具失败")
+            return False
+        try:
+            res = requests.get(self.download_url, proxies=self.proxies)
+        except Exception as e:
+            self.download_plugin(retry_time + 1)
+
+        with open(self.zip_path, "wb") as code:
+            code.write(res.content)
+        with zipfile.ZipFile(self.zip_path, 'r') as zip_ref:
+            self.extract_path = f"{self.extract_path}{str(round(datetime.datetime.now().timestamp()))}"
+            zip_ref.extractall(self.extract_path)
+        manifest_path = self.find_manifest_path()
+        manifest_parent_path = os.path.split(manifest_path)[0]
+        if os.path.exists(self.plugin_path):
+            shutil.rmtree(self.plugin_path)
+        shutil.move(manifest_parent_path, self.plugin_path)
+        os.remove(self.zip_path)
+        shutil.rmtree(self.extract_path)
+        return True
+
+    def find_manifest_path(self):
+        for p, dir_list, file_list in os.walk(self.extract_path):
+            for f in file_list:
+                fp = os.path.join(p, f)
+                if f.lower() == 'manifest.json':
+                    return fp
+        return None
+
+    def check_update(self):
+        with open(self.manifest_path, 'r', encoding='utf-8') as fp:
+            json_data = load(fp)
+            local_version = json_data['version']
+        res = requests.get(self.manifest_url, proxies=self.proxies)
+        json = res.json()
+        latest_version = json['version']
+        if local_version != latest_version:
+            return True
+        return False
