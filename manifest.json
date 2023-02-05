@@ -3,9 +3,9 @@
   "title": "学习工具",
   "author": "oreki",
   "description": "",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "requirements": [],
-  "update_log": "1.整理文件只对目标目录做硬链判断",
+  "update_log": "1.修复加载顺序引起的bug",
   "configField": [
     {
       "fieldName": "proxy",

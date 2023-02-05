@@ -364,3 +364,8 @@ def update_download_record(torrent_hash):
     finally:
         cur.close()
         conn.close()
+
+
+create_database()
+create_download_record_table()
+create_actor_table()

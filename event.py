@@ -43,6 +43,9 @@ hard_link_dir = ''
 pic_url = 'https://api.r10086.com/img-api.php?type=%E6%9E%81%E5%93%81%E7%BE%8E%E5%A5%B3%E5%9B%BE%E7%89%87'
 fail_folder = ''
 
+if not os.path.exists(torrent_folder):
+    os.mkdir(torrent_folder)
+
 
 def init_config(config):
     global path, proxies, torrent_folder, jav_cookie, ua, category, \
