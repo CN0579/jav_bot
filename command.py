@@ -2,7 +2,7 @@ from mbot.openapi import mbot_api
 import logging
 from mbot.core.params import ArgSchema, ArgType
 from mbot.core.plugins import plugin, PluginCommandContext, PluginCommandResponse
-from .event import update_top_rank, download_by_codes, add_actor, upgrade_jav_bot
+from .event import update_top_rank, download_by_codes, add_actor, upgrade_plugin
 from .mdc import mdc_command
 from .sql import *
 
@@ -51,7 +51,7 @@ def base_command(ctx: PluginCommandContext,
     if command == 'update_rank':
         update_top_rank()
     if command == 'upgrade_plugin':
-        upgrade_jav_bot()
+        upgrade_plugin()
     _LOGGER.info("更新完成")
     return PluginCommandResponse(True, '')
 

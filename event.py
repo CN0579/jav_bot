@@ -110,11 +110,14 @@ def task():
 
 @plugin.task('auto_upgrade', '自动更新', cron_expression='5 * * * *')
 def upgrade_task():
+    upgrade_plugin()
+
+
+def upgrade_plugin():
     _LOGGER.info("jav_bot开始检查更新")
     need_update = check_update(proxies=proxies)
     if need_update:
         _LOGGER.info("jav_bot检测到新的版本,开始执行更新")
-    if need_update:
         old_manifest = get_manifest()
         old_version = old_manifest['version']
         if upgrade_jav_bot():
