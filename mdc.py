@@ -2,6 +2,7 @@ import configparser
 import datetime
 import os
 import logging
+import stat
 import sys
 
 from .tools import *
@@ -36,9 +37,17 @@ def mdc_aj(path):
             _LOGGER.error(f"{adult_video}整理失败")
 
 
-def is_hardlink(filepath):
-    sfs = os.stat(filepath)
-    return sfs.st_nlink > 1
+def is_hardlink(src, dst):
+    s1 = os.stat(src)
+    s2 = os.stat(dst)
+    return (s1[stat.ST_INO], s1[stat.ST_DEV]) == (s2[stat.ST_INO], s2[stat.ST_DEV])
+
+
+def find_hard_link(src, videos):
+    for video in videos:
+        if is_hardlink(src, video):
+            return True
+    return False
 
 
 def mdc_command(path):
@@ -54,10 +63,11 @@ def mdc_command(path):
     mdc = get_mdc()
     if mdc:
         videos = collect_videos(path)
+        hard_link_videos = collect_videos(target_folder)
         fail_videos = []
         for video in videos:
-            if is_hardlink(video):
-                _LOGGER.error(f"文件{video},已存在硬链接，无法判断是否刮削，但是选择跳过刮削")
+            if find_hard_link(video, hard_link_videos):
+                _LOGGER.error(f"文件{video},已存在整理文件，跳过刮削")
                 continue
             if os.path.getsize(video) < 200 * 1024 * 1000:
                 _LOGGER.error(f"文件体积小于200M,跳过刮削")
