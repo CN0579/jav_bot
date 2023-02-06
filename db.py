@@ -138,7 +138,7 @@ class CourseDB:
 
     def insert(self, course: Course):
         create_time = datetime.datetime.now()
-        sql = f"""insert into coursr(code,overview,tags,poster_url,banner_url,status,create_time) values 
+        sql = f"""insert into course(code,overview,tags,poster_url,banner_url,status,create_time) values 
                 ('{course.code}','{course.overview}','{course.tags}','{course.poster_url}','{course.banner_url}',{course.status},'{create_time}')
                 """
         conn = self.db.get_connect()
@@ -146,14 +146,14 @@ class CourseDB:
         try:
             cur.execute(sql)
             conn.commit()
-            course = CourseDB.get_by_code(course.code)
-            return course
         except Exception as e:
             _LOGGER.error(str(e))
             return None
         finally:
             cur.close()
             conn.close()
+            course = CourseDB.get_by_code(course.code)
+            return course
 
 
 class TeacherDB:
