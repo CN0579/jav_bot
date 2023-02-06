@@ -148,7 +148,7 @@ class Core:
         self.jav_library = JavLibrary(conf.jav_cookie, conf.ua, conf.proxies)
         self.m_team = MTeam()
         self.jav_bus = JavBus(conf.jav_bus_cookie, conf.ua, conf.proxies)
-        self.plugin_utils =
+        self.plugin_utils = PluginTools(conf.proxies)
 
     def after_rebot(self):
         _LOGGER.info("重启服务器之后,将还在下载跟下载完成没有刮削的纳入监听")
@@ -349,17 +349,17 @@ class Core:
 
     def upgrade_plugin(self):
         _LOGGER.info("jav_bot开始检查更新")
-        need_update = check_update(proxies=proxies)
+        need_update = self.plugin_utils.check_update()
         if need_update:
             _LOGGER.info("jav_bot检测到新的版本,开始执行更新")
-            old_manifest = get_manifest()
+            old_manifest = self.plugin_utils.get_manifest()
             old_version = old_manifest['version']
-            if upgrade_jav_bot():
+            if self.plugin_utils.download_plugin(1):
                 _LOGGER.info("执行更新成功")
-                new_manifest = get_manifest()
+                new_manifest = self.plugin_utils.get_manifest()
                 new_version = new_manifest['version']
                 update_log = new_manifest['update_log']
-                push_upgrade_success(old_version, new_version, update_log)
+                self.message.push_upgrade_success(old_version, new_version, update_log)
             else:
                 _LOGGER.info("执行更新失败")
 
@@ -393,4 +393,4 @@ def task():
 
 @plugin.task('auto_upgrade', '自动更新', cron_expression='5 * * * *')
 def upgrade_task():
-    upgrade_plugin()
+    core.upgrade_plugin()
