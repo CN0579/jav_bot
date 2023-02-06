@@ -152,8 +152,7 @@ class CourseDB:
         finally:
             cur.close()
             conn.close()
-            course = CourseDB.get_by_code(course.code)
-            return course
+        return self.get_by_code(course.code)
 
 
 class TeacherDB:
@@ -250,14 +249,14 @@ class TeacherDB:
         try:
             cur.execute(sql)
             conn.commit()
-            teacher = TeacherDB.get_by_code()
-            return teacher
         except Exception as e:
             _LOGGER.error(str(e))
             return None
         finally:
             cur.close()
             conn.close()
+
+        return self.get_by_code(teacher.code)
 
 
 class DownloadRecordDB:
@@ -377,11 +376,10 @@ class DownloadRecordDB:
         try:
             cur.execute(sql)
             conn.commit()
-            download_record = DownloadRecordDB.get_by_torrent_hash(download_record.torrent_hash)
-            return download_record
         except Exception as e:
             _LOGGER.error(str(e))
             return None
         finally:
             cur.close()
             conn.close()
+        return self.get_by_torrent_hash(download_record.torrent_hash)

@@ -5,7 +5,7 @@ from mbot.openapi import mbot_api
 import logging
 from mbot.core.params import ArgSchema, ArgType
 from mbot.core.plugins import plugin, PluginCommandContext, PluginCommandResponse
-from .core import *
+from .event import *
 
 server = mbot_api
 _LOGGER = logging.getLogger(__name__)

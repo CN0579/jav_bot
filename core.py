@@ -8,7 +8,6 @@ import time
 from typing import List, Dict, Any
 
 from mbot.openapi import mbot_api
-from mbot.core.plugins import plugin, PluginMeta
 
 from .crawler import JavLibrary, MTeam, JavBus
 from .models import Course, Teacher
@@ -193,6 +192,7 @@ class Core:
 
     def save_new_code(self):
         crawling_course_list = self.jav_library.crawling_top20()
+        _LOGGER.info(f"当前TOP:{[crawling_course['code'] for crawling_course in crawling_course_list]}")
         if not crawling_course_list:
             _LOGGER.error('爬取jav失败')
             return
@@ -202,6 +202,7 @@ class Core:
             overview = crawling_course['overview']
             img = crawling_course['img']
             course = self.course_db.get_by_code(code)
+            _LOGGER.info(f"番号{course.code}")
             code_exist = self.find_video_from_library(code)
             if not course:
                 course = Course({
@@ -211,12 +212,14 @@ class Core:
                     'status': 0
                 })
                 course = self.course_db.insert(course)
+                _LOGGER.info(f"{course.id}")
                 if not code_exist:
                     new_course.append(code)
                 else:
                     _LOGGER.info(f"媒体库已存在番号{code},将标记为下载完成")
                     course.status = 1
                     self.course_db.update(course)
+                    _LOGGER.info(course.status)
             else:
                 if code_exist:
                     _LOGGER.info(f"媒体库已存在番号{code},将标记为下载完成")
@@ -413,59 +416,4 @@ class Core:
             self.download_by_codes(code_list)
 
 
-config: Config = None
-jav_bot: Core = None
 
-
-@plugin.after_setup
-def after_setup(plugin_meta: PluginMeta, conf: Dict[str, Any]):
-    global config, jav_bot
-    config = Config(conf)
-    jav_bot = Core(config)
-    jav_bot.course_db.create_table()
-    jav_bot.teacher_db.create_table()
-    jav_bot.download_record_db.create_table()
-    jav_bot.after_rebot()
-
-
-@plugin.config_changed
-def config_changed(conf: Dict[str, Any]):
-    global config, jav_bot
-    config = Config(conf)
-    jav_bot = Core(config)
-
-
-@plugin.task('task', '定时任务', cron_expression='0 22 * * *')
-def task():
-    time.sleep(random.randint(1, 3600))
-    jav_bot.update_top_rank()
-    jav_bot.subscribe_by_teacher()
-
-
-@plugin.task('auto_upgrade', '自动更新', cron_expression='5 * * * *')
-def upgrade_task():
-    jav_bot.upgrade_plugin()
-
-
-def reorganize(src):
-    jav_bot.reorganize(src)
-
-
-def subscribe_by_teacher():
-    jav_bot.subscribe_by_teacher()
-
-
-def update_top_rank():
-    jav_bot.update_top_rank()
-
-
-def upgrade_plugin():
-    jav_bot.upgrade_plugin()
-
-
-def download_by_codes(code_list):
-    jav_bot.download_by_codes(code_list)
-
-
-def add_actor(keyword, start_date):
-    jav_bot.add_actor(keyword, start_date)
