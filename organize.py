@@ -70,7 +70,7 @@ class Organize:
     organize_fail: str
     organize_tool: None
 
-    def __int__(self):
+    def __init__(self):
         conf = configparser.ConfigParser()
         conf.read(self.config_path)
         self.organize_success = conf.get('common', 'target_folder')

@@ -37,7 +37,6 @@ class DB:
             cur.close()
             conn.close()
 
-    @staticmethod
     def get_connect(self):
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = dict_factory
@@ -45,9 +44,9 @@ class DB:
 
 
 class CourseDB:
+    db: DB = DB()
 
-    @staticmethod
-    def create_table():
+    def create_table(self):
         create_sql: str = """CREATE TABLE course (
                                         id integer primary key autoincrement,
                                         code varchar(15) not null,
@@ -59,12 +58,11 @@ class CourseDB:
                                         create_time datetime,
                                         update_time datetime
                                     );"""
-        DB.create_table('course', create_sql)
+        self.db.create_table('course', create_sql)
 
-    @staticmethod
-    def get_by_id(course_id: int):
+    def get_by_id(self, course_id: int):
         sql = f"select * from course where id = {course_id}"
-        conn = DB.get_connect()
+        conn = self.db.get_connect()
         cur = conn.cursor()
         try:
             cur.execute(sql)
@@ -79,12 +77,11 @@ class CourseDB:
             cur.close()
             conn.close()
 
-    @staticmethod
-    def list(status: int = None):
+    def list(self, status: int = None):
         sql = f"select * from course"
         if status:
             sql = f"select * from course where status = {status}"
-        conn = DB.get_connect()
+        conn = self.db.get_connect()
         cur = conn.cursor()
         try:
             cur.execute(sql)
@@ -99,10 +96,9 @@ class CourseDB:
             cur.close()
             conn.close()
 
-    @staticmethod
-    def get_by_code(code: str):
+    def get_by_code(self, code: str):
         sql = f"select * from course where code = '{code}'"
-        conn = DB.get_connect()
+        conn = self.db.get_connect()
         cur = conn.cursor()
         try:
             cur.execute(sql)
@@ -117,8 +113,7 @@ class CourseDB:
             cur.close()
             conn.close()
 
-    @staticmethod
-    def update(course: Course):
+    def update(self, course: Course):
         sql = f"""update course set 
               overview = '{course.overview}',
               tags = '{course.tags}',
@@ -128,7 +123,7 @@ class CourseDB:
               update_time = '{course.update_time}'
               where id = {course.id}
               """
-        conn = DB.get_connect()
+        conn = self.db.get_connect()
         cur = conn.cursor()
         try:
             cur.execute(sql)
@@ -141,13 +136,12 @@ class CourseDB:
             cur.close()
             conn.close()
 
-    @staticmethod
-    def insert(course: Course):
+    def insert(self, course: Course):
         create_time = datetime.datetime.now()
         sql = f"""insert into coursr(code,overview,tags,poster_url,banner_url,status,create_time) values 
                 ('{course.code}','{course.overview}','{course.tags}','{course.poster_url}','{course.banner_url}',{course.status},'{create_time}')
                 """
-        conn = DB.get_connect()
+        conn = self.db.get_connect()
         cur = conn.cursor()
         try:
             cur.execute(sql)
@@ -163,20 +157,20 @@ class CourseDB:
 
 
 class TeacherDB:
+    db: DB = DB()
 
-    @staticmethod
-    def create_table():
+    def create_table(self):
         create_sql: str = """CREATE TABLE teacher (
                                         id integer primary key autoincrement,
                                         name varchar(15) not null,
-                                        code varchar(255) not null                              
+                                        code varchar(255) not null,
+                                        start_date date not null                              
                                     );"""
-        DB.create_table('teacher', create_sql)
+        self.db.create_table('teacher', create_sql)
 
-    @staticmethod
-    def get_by_id(teacher_id: int):
+    def get_by_id(self, teacher_id: int):
         sql = f"select * from teacher where id = {teacher_id}"
-        conn = DB.get_connect()
+        conn = self.db.get_connect()
         cur = conn.cursor()
         try:
             cur.execute(sql)
@@ -191,12 +185,11 @@ class TeacherDB:
             cur.close()
             conn.close()
 
-    @staticmethod
-    def list(name: str = None):
+    def list(self, name: str = None):
         sql = f"select * from teacher"
         if name:
             sql = f"select * from teacher where name like '%{name}%'"
-        conn = DB.get_connect()
+        conn = self.db.get_connect()
         cur = conn.cursor()
         try:
             cur.execute(sql)
@@ -211,10 +204,9 @@ class TeacherDB:
             cur.close()
             conn.close()
 
-    @staticmethod
-    def get_by_code(code: str):
-        sql = f"select * from teacher where webpage = '{code}'"
-        conn = DB.get_connect()
+    def get_by_code(self, code: str):
+        sql = f"select * from teacher where code = '{code}'"
+        conn = self.db.get_connect()
         cur = conn.cursor()
         try:
             cur.execute(sql)
@@ -229,14 +221,14 @@ class TeacherDB:
             cur.close()
             conn.close()
 
-    @staticmethod
-    def update(teacher: Teacher):
+    def update(self, teacher: Teacher):
         sql = f"""update teacher set 
               name = '{teacher.name}',
-              code = '{teacher.code}'
+              code = '{teacher.code}',
+              start_date = '{teacher.start_date}'
               where id = {teacher.id}
               """
-        conn = DB.get_connect()
+        conn = self.db.get_connect()
         cur = conn.cursor()
         try:
             cur.execute(sql)
@@ -249,17 +241,16 @@ class TeacherDB:
             cur.close()
             conn.close()
 
-    @staticmethod
-    def insert(teacher: Teacher):
-        sql = f"""insert into teacher(name,code) values 
-                ('{teacher.name}','{teacher.code}')
+    def insert(self, teacher: Teacher):
+        sql = f"""insert into teacher(name,code,start_date) values 
+                ('{teacher.name}','{teacher.code}','{teacher.start_date}')
                 """
-        conn = DB.get_connect()
+        conn = self.db.get_connect()
         cur = conn.cursor()
         try:
             cur.execute(sql)
             conn.commit()
-            teacher = TeacherDB.get_by_code(teacher.code)
+            teacher = TeacherDB.get_by_code()
             return teacher
         except Exception as e:
             _LOGGER.error(str(e))
@@ -270,8 +261,9 @@ class TeacherDB:
 
 
 class DownloadRecordDB:
-    @staticmethod
-    def create_table():
+    db: DB = DB()
+
+    def create_table(self):
         create_sql: str = """CREATE TABLE download_record (
                                            id integer primary key autoincrement,
                                            course_id integer not null,
@@ -283,12 +275,11 @@ class DownloadRecordDB:
                                            create_time datetime,
                                            completed_time datetime
                                        );"""
-        DB.create_table('download_record', create_sql)
+        self.db.create_table('download_record', create_sql)
 
-    @staticmethod
-    def get_by_id(download_record_id: int):
+    def get_by_id(self, download_record_id: int):
         sql = f"select * from download_record where id = {download_record_id}"
-        conn = DB.get_connect()
+        conn = self.db.get_connect()
         cur = conn.cursor()
         try:
             cur.execute(sql)
@@ -303,12 +294,11 @@ class DownloadRecordDB:
             cur.close()
             conn.close()
 
-    @staticmethod
-    def list(download_status: int = None):
+    def list(self, download_status: int = None):
         sql = f"select * from download_record"
         if download_status:
             sql = f"select * from download_record where download_status = {download_status}"
-        conn = DB.get_connect()
+        conn = self.db.get_connect()
         cur = conn.cursor()
         try:
             cur.execute(sql)
@@ -323,10 +313,9 @@ class DownloadRecordDB:
             cur.close()
             conn.close()
 
-    @staticmethod
-    def get_by_course_id(course_id: int):
+    def get_by_course_id(self, course_id: int):
         sql = f"select * from download_record where course_id = {course_id}"
-        conn = DB.get_connect()
+        conn = self.db.get_connect()
         cur = conn.cursor()
         try:
             cur.execute(sql)
@@ -341,10 +330,9 @@ class DownloadRecordDB:
             cur.close()
             conn.close()
 
-    @staticmethod
-    def get_by_torrent_hash(torrent_hash: str):
+    def get_by_torrent_hash(self, torrent_hash: str):
         sql = f"select * from download_record where torrent_hash = '{torrent_hash}'"
-        conn = DB.get_connect()
+        conn = self.db.get_connect()
         cur = conn.cursor()
         try:
             cur.execute(sql)
@@ -359,14 +347,13 @@ class DownloadRecordDB:
             cur.close()
             conn.close()
 
-    @staticmethod
-    def update(download_record: DownloadRecord):
+    def update(self, download_record: DownloadRecord):
         sql = f"""update download_record set 
                  download_status = '{download_record.status}',
                  completed_time = '{download_record.completed_time}'
                  where id = {download_record.id}
                  """
-        conn = DB.get_connect()
+        conn = self.db.get_connect()
         cur = conn.cursor()
         try:
             cur.execute(sql)
@@ -379,14 +366,13 @@ class DownloadRecordDB:
             cur.close()
             conn.close()
 
-    @staticmethod
-    def insert(download_record: DownloadRecord):
+    def insert(self, download_record: DownloadRecord):
         create_time = datetime.datetime.now()
         sql = f"""insert into download_record(course_id,torrent_name,torrent_hash,torrent_path,content_path,download_status,create_time) values 
                    ({download_record.course_id},'{download_record.torrent_name}','{download_record.torrent_hash}',
                    '{download_record.torrent_path}','{download_record.content_path}',{download_record.download_status},'{create_time}')
                    """
-        conn = DB.get_connect()
+        conn = self.db.get_connect()
         cur = conn.cursor()
         try:
             cur.execute(sql)

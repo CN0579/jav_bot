@@ -1,4 +1,5 @@
 import configparser
+import datetime
 import logging
 import os
 import random
@@ -7,10 +8,11 @@ import time
 from typing import List, Dict, Any
 
 from mbot.openapi import mbot_api
+from mbot.core.plugins import plugin, PluginMeta
 
-from crawler import JavLibrary, MTeam, JavBus
-from models import Course
-from plugin_tools import PluginTools
+from .crawler import JavLibrary, MTeam, JavBus
+from .models import Course, Teacher
+from .plugin_tools import PluginTools
 from .db import DownloadRecordDB, CourseDB, TeacherDB
 from .organize import Organize, collect_videos
 from .download_client import DownloadClient
@@ -45,6 +47,7 @@ class Config:
         self.jav_bus_cookie = config.get('jav_bus_cookie')
         self.ua = config.get('ua')
         self.category = config.get('category')
+        self.uid = config.get('uid')
         self.message_to_uid = config.get('uid')
         self.client_name = config.get('client_name')
         self.need_mdc = config.get('need_mdc')
@@ -55,7 +58,7 @@ class Config:
 
     def create_config_ini(self):
         conf = configparser.ConfigParser()
-        conf['common'] = {'target_folder': self.hard_link_dir, 'fail_folder': self.failed_folder}
+        conf['common'] = {'target_folder': self.hard_link_dir, 'fail_folder': self.fail_folder}
         conf['proxy'] = {'proxy': self.proxy}
         config_ini_path = f'{os.path.abspath(os.path.dirname(__file__))}/config.ini'
         if os.path.exists(config_ini_path):
@@ -68,7 +71,7 @@ class Message:
     uids: List
     pic_url: str
 
-    def __int__(self, uids, pic_url):
+    def __init__(self, uids, pic_url):
         self.uids = uids
         self.pic_url = pic_url
 
@@ -135,11 +138,11 @@ class Core:
     m_team: MTeam
     jav_bus: JavBus
     jav_bot_plugin_path: str = os.path.abspath(os.path.dirname(__file__))
-    plugin_utils:PluginTools
+    plugin_utils: PluginTools
 
-    def __int__(self, conf: Config):
+    def __init__(self, conf: Config):
         self.config = conf
-        self.download_client = DownloadClient(conf.client_name).client
+        self.download_client = DownloadClient(conf.client_name)
         self.course_db = CourseDB()
         self.teacher_db = TeacherDB()
         self.download_record_db = DownloadRecordDB()
@@ -149,6 +152,9 @@ class Core:
         self.m_team = MTeam()
         self.jav_bus = JavBus(conf.jav_bus_cookie, conf.ua, conf.proxies)
         self.plugin_utils = PluginTools(conf.proxies)
+
+    def get_core(self):
+        return self
 
     def after_rebot(self):
         _LOGGER.info("重启服务器之后,将还在下载跟下载完成没有刮削的纳入监听")
@@ -363,34 +369,103 @@ class Core:
             else:
                 _LOGGER.info("执行更新失败")
 
+    def reorganize(self, src):
+        self.organize.organize_all(src)
 
-config: Config
-core: Core
+    def add_actor(self, keyword: str, start_date):
+        if len(keyword) == len(keyword.encode()):
+            true_code = get_true_code(keyword)
+            teacher_grab = self.jav_bus.crawling_by_code(true_code)
+        else:
+            teacher_grab = self.jav_bus.crawling_by_name(keyword)
+        flag = False
+        if teacher_grab:
+            teacher_url = teacher_grab['teacher_url']
+            teacher_url_split_list = teacher_url.split('/')
+            code = teacher_url_split_list[len(teacher_url_split_list) - 1]
+            name = teacher_grab['teacher_name']
+            teacher = self.teacher_db.get_by_code(code)
+            start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+            if teacher:
+                flag = False
+                teacher.start_date = start_date
+                self.teacher_db.update(teacher)
+                _LOGGER.info(f"{name}已存在订阅的演员列表中")
+            else:
+                flag = True
+                teacher = Teacher({
+                    'name': name,
+                    'code': code,
+                    'start_date': start_date
+                })
+                self.teacher_db.insert(teacher)
+                _LOGGER.info(f"{name}订阅完成")
+            code_list = self.jav_bus.crawling_actor(code, start_date)
+            if code_list:
+                self.download_by_codes(code_list)
+        return flag
+
+    def subscribe_by_teacher(self):
+        teacher_list = self.teacher_db.list()
+        for teacher in teacher_list:
+            crawling_list = self.jav_bus.crawling_actor(teacher.code, teacher.start_date)
+            code_list = ','.join([item['code'] for item in crawling_list])
+            self.download_by_codes(code_list)
+
+
+config: Config = None
+jav_bot: Core = None
 
 
 @plugin.after_setup
-def after_setup(conf: Dict[str, Any]):
-    global config, core
+def after_setup(plugin_meta: PluginMeta, conf: Dict[str, Any]):
+    global config, jav_bot
     config = Config(conf)
-    core = Core(config)
-    core.after_rebot()
+    jav_bot = Core(config)
+    jav_bot.course_db.create_table()
+    jav_bot.teacher_db.create_table()
+    jav_bot.download_record_db.create_table()
+    jav_bot.after_rebot()
 
 
 @plugin.config_changed
 def config_changed(conf: Dict[str, Any]):
-    global config, core
+    global config, jav_bot
     config = Config(conf)
-    core = Core(config)
+    jav_bot = Core(config)
 
 
 @plugin.task('task', '定时任务', cron_expression='0 22 * * *')
 def task():
-    global core
     time.sleep(random.randint(1, 3600))
-    core.update_top_rank()
-    core.subscribe_by_actor()
+    jav_bot.update_top_rank()
+    jav_bot.subscribe_by_teacher()
 
 
 @plugin.task('auto_upgrade', '自动更新', cron_expression='5 * * * *')
 def upgrade_task():
-    core.upgrade_plugin()
+    jav_bot.upgrade_plugin()
+
+
+def reorganize(src):
+    jav_bot.reorganize(src)
+
+
+def subscribe_by_teacher():
+    jav_bot.subscribe_by_teacher()
+
+
+def update_top_rank():
+    jav_bot.update_top_rank()
+
+
+def upgrade_plugin():
+    jav_bot.upgrade_plugin()
+
+
+def download_by_codes(code_list):
+    jav_bot.download_by_codes(code_list)
+
+
+def add_actor(keyword, start_date):
+    jav_bot.add_actor(keyword, start_date)

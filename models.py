@@ -38,6 +38,7 @@ class Teacher:
     id: int
     name: str
     code: str
+    start_date: datetime
 
     def __init__(self, data: Dict):
         copy_value(data, self)

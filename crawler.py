@@ -1,4 +1,5 @@
 import datetime
+import os.path
 import time
 from typing import List
 
@@ -31,7 +32,7 @@ class JavLibrary:
     cookie_dict: dict
     headers: dict
 
-    def __int__(self, cookie: str, ua: str, proxies: dict = None):
+    def __init__(self, cookie: str, ua: str, proxies: dict = None):
         self.cookie = cookie
         self.ua = ua
         self.proxies = proxies
@@ -67,14 +68,16 @@ class MTeam:
     headers: dict
     torrent_folder: str = '/data/jav_bot_torrents'
 
-    def __int__(self):
+    def __init__(self):
         m_team = self.get_m_team()
         self.cookie = m_team.cookie
-        self.ua = m_team.ua
+        self.ua = m_team.user_agent
         self.cookie_dict = str_cookies_to_dict(self.cookie)
         self.headers = {'cookie': self.cookie, 'Referer': self.host}
         if self.ua:
             self.headers['User-Agent'] = self.ua
+        if not os.path.exists(self.torrent_folder):
+            os.makedirs(self.torrent_folder)
 
     def crawling_torrents(self, keyword):
         url = f'{self.host}/adult.php?incldead=1&spstate=0&inclbookmarked=0&search={keyword}&search_area=0&search_mode=0'
@@ -158,18 +161,18 @@ class JavBus:
     cookie_dict: dict
     headers: dict
 
-    def __int__(self, cookie: str, ua: str, proxies: dict = None):
+    def __init__(self, cookie: str, ua: str, proxies: dict = None):
         self.cookie = cookie
         self.ua = ua
         self.proxies = proxies
-        if ua:
-            self.headers['User-Agent'] = ua
         if 'exitmad' not in self.cookie:
             self.cookie = f"exitmad=all;{self.cookie}"
         else:
             self.cookie = self.cookie.replace('existmag=mag', 'existmag=all')
         self.cookie_dict = str_cookies_to_dict(cookie)
-        self.headers = {'cookie': cookie, 'Referer': self.host}
+        self.headers = {'cookie': cookie, 'Referer': self.hosts[0]}
+        if ua:
+            self.headers['User-Agent'] = ua
 
     def crawling_actor(self, star_code, start_date: datetime.date):
         for host in self.hosts:
@@ -226,14 +229,14 @@ class JavBus:
                 return teacher_list
         return None
 
-    def grab_jav_bus_by_code(self, code):
+    def crawling_by_code(self, code):
         teacher_list = self.get_teacher_list(code)
         if teacher_list and len(teacher_list) == 1:
             teacher = teacher_list[0]
             return {'teacher_url': teacher['url'], 'teacher_name': teacher['name']}
         return None
 
-    def grab_jav_bus_by_name(self, teacher_name):
+    def crawling_by_name(self, teacher_name):
         for host in self.hosts:
             url = f"{host}/searchstar/{teacher_name}"
             try:

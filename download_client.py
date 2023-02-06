@@ -8,7 +8,7 @@ class DownloadClient:
     client: None
     download_manager: DownloadClientManager = DownloadClientManager()
 
-    def __int__(self, client_name: str):
+    def __init__(self, client_name: str):
         self.client_name = client_name
         self.download_manager.init(client_configs=self.get_config())
         self.client = self.get_client(client_name)
