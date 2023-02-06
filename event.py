@@ -376,7 +376,7 @@ def fetch_un_download_code():
 
 
 def find_video_from_library(code: str):
-    videos = collect_videos(hard_link_dir)
+    videos = collect_courses(hard_link_dir)
     video_name_list = [os.path.split(video)[0] for video in videos]
     for video_name in video_name_list:
         if video_name.startswith(code):

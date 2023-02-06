@@ -14,23 +14,23 @@ _LOGGER = logging.getLogger(__name__)
 class PluginTools:
     download_url: str
     manifest_url: str
-    plugin_folder_name: str
     proxies: Dict[str, str]
     plugins_folder_path: str = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+    plugin_path: str = os.path.abspath(os.path.dirname(__file__))
+    plugin_folder_name: str = os.path.split(plugin_path)[1]
     zip_path: str = f"{plugins_folder_path}/{plugin_folder_name}.zip"
-    plugin_path = f"{plugins_folder_path}/{plugin_folder_name}"
     extract_path: str = f"{plugins_folder_path}/{plugin_folder_name}_new_"
     manifest_path: str = f"{plugin_path}/manifest.json"
 
-    def __init__(self, download_url: str, manifest_url: str, plugin_folder_name: str, proxies: Optional[Dict] = None):
-        self.download_url = download_url
-        self.manifest_url = manifest_url
-        self.plugin_folder_name = plugin_folder_name
+    def __init__(self, proxies: Optional[Dict] = None):
+        manifest = self.get_manifest()
+        self.download_url = manifest['download_url']
+        self.manifest_url = manifest['remote_manifest_url']
         self.proxies = proxies
 
     def download_plugin(self, retry_time: int = 1):
         if retry_time > 3:
-            _LOGGER.error("尝试拉取项目3次失败,在线更新学习工具失败")
+            _LOGGER.error("尝试拉取项目3次失败,在线更新插件失败")
             return False
         try:
             res = requests.get(self.download_url, proxies=self.proxies)
@@ -69,3 +69,8 @@ class PluginTools:
         if local_version != latest_version:
             return True
         return False
+
+    def get_manifest(self):
+        with open(self.manifest_path, 'r', encoding='utf-8') as fp:
+            json_data = load(fp)
+            return json_data

@@ -1,6 +1,5 @@
 from mbot.external.downloadclient import DownloadClientManager, DownloadClient
 import yaml
-from .sql import *
 
 download_manager = DownloadClientManager()
 

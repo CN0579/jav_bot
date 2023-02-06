@@ -24,8 +24,8 @@ def mdc_aj(path):
     mdc = get_mdc()
     if mdc:
         _LOGGER.info("开始执行MDC")
-        videos = collect_videos(path)
-        adult_video = get_max_size_video(videos)
+        videos = collect_courses(path)
+        adult_video = get_highest_quality_course(videos)
         try:
             mdc(adult_video, config_path)
             _LOGGER.error(f"{adult_video}整理成功")
@@ -62,8 +62,8 @@ def mdc_command(path):
         os.makedirs(target_folder)
     mdc = get_mdc()
     if mdc:
-        videos = collect_videos(path)
-        hard_link_videos = collect_videos(target_folder)
+        videos = collect_courses(path)
+        hard_link_videos = collect_courses(target_folder)
         fail_videos = []
         for video in videos:
             if find_hard_link(video, hard_link_videos):
