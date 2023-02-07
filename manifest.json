@@ -5,7 +5,7 @@
   "description": "",
   "version": "0.4.1",
   "requirements": [],
-  "update_log": "订阅番号将比对媒体库，已存在的不再下载,直接标记为已下载",
+  "update_log": "1.代码重构 2.优化下载器代码",
   "download_url": "https://github.com/or3ki/jav_bot/archive/refs/heads/master.zip",
   "remote_manifest_url": "https://raw.githubusercontent.com/or3ki/jav_bot/master/manifest.json",
   "configField": [

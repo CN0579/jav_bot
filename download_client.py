@@ -1,3 +1,4 @@
+from mbot.external.downloadclient.multipledownloadclient import MultipleDownloadClient
 from mbot.external.downloadclient import DownloadClientManager
 import yaml
 
@@ -28,14 +29,14 @@ class DownloadClient:
         return self.client.download_from_file(torrent_filepath=torrent_path, savepath=save_path, category=category)
 
     def list_downloading_torrents(self):
-        downloading_torrents = self.client.download_torrents()
+        downloading_torrents = MultipleDownloadClient.get_downloading_torrent()
         return [downloading_torrents[torrent_hash] for torrent_hash in downloading_torrents]
 
     def get_hash_by_torrent_file(self, torrent_file):
         return self.client.info_hash(torrent_file)
 
     def get_torrent_by_hash(self, torrent_file_hash):
-        return self.client.get_by_hash(torrent_file_hash)
+        return MultipleDownloadClient.get_torrent_by_info_hash(torrent_file_hash)
 
     def get_torrent_by_torrent_file(self, torrent_file):
         torrent_file_hash = self.get_hash_by_torrent_file(torrent_file)
