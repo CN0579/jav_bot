@@ -1,12 +1,13 @@
 import datetime
 import os.path
 import time
-from typing import List
+from typing import List, Dict
 
 import bs4
 import requests
 from mbot.openapi import mbot_api
 from mbot.common.numberutils import NumberUtils
+from moviebotapi.core.utils import copy_value
 
 
 def str_cookies_to_dict(cookies):
@@ -23,6 +24,20 @@ def str_cookies_to_dict(cookies):
     return dict_cookie
 
 
+class CrawlerDetail:
+    code: str
+    title: str
+    length: str
+    poster: str
+    banner: str
+    tags: List
+    casts: List
+    release_date: str
+
+    def __init__(self, data: Dict):
+        copy_value(data, self)
+
+
 class JavLibrary:
     host: str = 'https://www.javlibrary.com'
     top20_url: str = f'{host}/cn/vl_mostwanted.php?page=1'
@@ -31,6 +46,10 @@ class JavLibrary:
     proxies: dict
     cookie_dict: dict
     headers: dict
+    poster_folder: str = f"{os.path.abspath(os.path.dirname(__file__))}/poster"
+    banner_folder: str = f"{os.path.abspath(os.path.dirname(__file__))}/banner"
+    poster_folder_name: str = '/poster'
+    banner_folder_name: str = '/banner'
 
     def __init__(self, cookie: str, ua: str, proxies: dict = None):
         self.cookie = cookie
@@ -57,6 +76,58 @@ class JavLibrary:
             }
             av_list.append(av)
         return av_list
+
+    def crawling_detail(self, code):
+        url = f"{self.host}/cn/vl_searchbyid.php?keyword={code}"
+        res = requests.get(url=url, proxies=self.proxies, cookies=self.cookie_dict, headers=self.headers)
+        soup = bs4.BeautifulSoup(res.text, 'html.parser')
+        title = soup.select('h3.post-title>a')[0].text
+        if not title:
+            return None
+        video_info = soup.select('div#video_info')[0]
+        date = video_info.select('div#video_date td.text')[0].text
+        length = video_info.select('div#video_length span.text')[0].text
+        genres = video_info.select('div#video_genres span')
+        casts = video_info.select('div#video_cast td.text>span>span.star>a')
+        banner = soup.select('img#video_jacket_img')[0].get('src')
+        poster = banner.replace('pl.jpg', 'ps.jpg')
+        cast_list = [item.text for item in casts]
+        genres_list = [item.text for item in genres]
+        poster_path = self.save_poster(poster, code)
+        banner_path = self.save_banner(banner, code)
+        crawler_detail = CrawlerDetail({
+            'code': code,
+            'title': title,
+            'length': length,
+            'release_date': date,
+            'tags': genres_list,
+            'casts': cast_list,
+            'poster': poster_path,
+            'banner': banner_path
+        })
+        return crawler_detail
+
+    def save_poster(self, url, code):
+        res = requests.get(url=url, proxies=self.proxies, cookies=self.cookie_dict, headers=self.headers)
+        if not os.path.exists(self.poster_folder):
+            os.makedirs(self.poster_folder)
+        poster_path = f"{self.poster_folder}/{code}.jpg"
+        if os.path.exists(poster_path):
+            return poster_path
+        with open(poster_path, 'wb') as poster_img:
+            poster_img.write(res.content)
+            return poster_path
+
+    def save_banner(self, url, code):
+        res = requests.get(url=url, proxies=self.proxies, cookies=self.cookie_dict, headers=self.headers)
+        if not os.path.exists(self.banner_folder):
+            os.makedirs(self.banner_folder)
+        banner_path = f"{self.banner_folder}/{code}.jpg"
+        if os.path.exists(banner_path):
+            return banner_path
+        with open(banner_path, 'wb') as banner_img:
+            banner_img.write(res.content)
+            return banner_path
 
 
 class MTeam:

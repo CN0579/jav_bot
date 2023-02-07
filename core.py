@@ -213,18 +213,15 @@ class Core:
         new_course = []
         for crawling_course in crawling_course_list:
             code = crawling_course['code']
-            overview = crawling_course['overview']
-            img = crawling_course['img']
             course = self.course_db.get_by_code(code)
             code_exist = self.find_video_from_library(code)
             if not course:
                 course = Course({
                     'code': code,
-                    'overview': overview,
-                    'poster_url': img,
                     'status': 0
                 })
                 course = self.course_db.insert(course)
+                self.fill_course_info(course)
                 if not code_exist:
                     new_course.append(code)
                 else:
@@ -245,6 +242,21 @@ class Core:
             if video_name.startswith(code):
                 return True
         return False
+
+
+    def fill_course_info(self,course:Course):
+        crawler_detail = self.jav_library.crawling_detail(course.code)
+        if not crawler_detail:
+            pass
+        course.overview = crawler_detail.title
+        course.tags = ','.join(crawler_detail.tags)
+        course.casts = ','.join(crawler_detail.casts)
+        course.duration = crawler_detail.length
+        course.poster_url = crawler_detail.poster.replace(self.jav_bot_plugin_path, '')
+        course.banner_url = crawler_detail.banner.replace(self.jav_bot_plugin_path, '')
+        course.release_date = crawler_detail.release_date
+        self.course_db.update(course)
+
 
     def deal_un_download_course(self, course):
         code = course.code
@@ -344,6 +356,7 @@ class Core:
                 'status': 0
             })
             course = self.course_db.insert(course)
+            self.fill_course_info(course)
             self.message.push_new_code_msg([code])
         if course.status == 1:
             _LOGGER.info(f'你已经下载过番号{code}')

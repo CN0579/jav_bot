@@ -62,6 +62,9 @@ class CourseDB:
                                         tags varchar(255),
                                         poster_url varchar(255),
                                         banner_url varchar(255),
+                                        casts varchar(255),
+                                        duration varchar(10),
+                                        release_date varchar(32),
                                         status integer not null,
                                         create_time varchar(32) not null,
                                         update_time varchar(32)
@@ -133,6 +136,9 @@ class CourseDB:
               poster_url = '{course.poster_url}',
               banner_url = '{course.banner_url}',
               status = {course.status},
+              casts = {course.casts},
+              tags = {course.tags},
+              duration = {course.duration},
               update_time = '{update_time}'
               where id = {course.id}
               """
@@ -151,8 +157,9 @@ class CourseDB:
 
     def insert(self, course: Course):
         create_time = get_current_time_str()
-        sql = f"""insert into course(code,overview,tags,poster_url,banner_url,status,create_time) values 
-                ('{course.code}','{course.overview}','{course.tags}','{course.poster_url}','{course.banner_url}',{course.status},'{create_time}')
+        sql = f"""insert into course(code,overview,tags,poster_url,banner_url,casts,tags,duration,status,create_time) values 
+                ('{course.code}','{course.overview}','{course.tags}','{course.poster_url}','{course.banner_url}',
+                '{course.casts}','{course.tags}','{course.duration}',{course.status},'{create_time}')
                 """
         conn = self.db.get_connect()
         cur = conn.cursor()

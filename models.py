@@ -12,6 +12,9 @@ class Course:
     tags: str
     poster_url: str
     banner_url: str
+    casts: str
+    duration: str
+    release_date: str
     status: int
     create_time: datetime.datetime
     update_time: datetime.datetime
