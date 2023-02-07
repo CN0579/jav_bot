@@ -3,7 +3,7 @@
   "title": "学习工具",
   "author": "oreki",
   "description": "",
-  "version": "0.4.1",
+  "version": "1.0.0",
   "requirements": [],
   "update_log": "1.代码重构 2.优化下载器代码",
   "download_url": "https://github.com/or3ki/jav_bot/archive/refs/heads/master.zip",
