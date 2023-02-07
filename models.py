@@ -1,9 +1,10 @@
 import datetime
 from typing import Dict
 
-from moviebotapi.core.utils import copy_value
+from moviebotapi.core.utils import copy_value, json_object
 
 
+@json_object
 class Course:
     id: int
     code: str
@@ -19,6 +20,7 @@ class Course:
         copy_value(data, self)
 
 
+@json_object
 class DownloadRecord:
     id: int
     course_id: int
@@ -34,6 +36,7 @@ class DownloadRecord:
         copy_value(data, self)
 
 
+@json_object
 class Teacher:
     id: int
     name: str
