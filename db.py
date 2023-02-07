@@ -136,9 +136,10 @@ class CourseDB:
               poster_url = '{course.poster_url}',
               banner_url = '{course.banner_url}',
               status = {course.status},
-              casts = {course.casts},
-              tags = {course.tags},
-              duration = {course.duration},
+              casts = '{course.casts}',
+              tags = '{course.tags}',
+              duration = '{course.duration}',
+              release_date = '{course.release_date}',
               update_time = '{update_time}'
               where id = {course.id}
               """
@@ -149,6 +150,7 @@ class CourseDB:
             conn.commit()
             return True
         except Exception as e:
+            _LOGGER.error(sql)
             _LOGGER.error(str(e))
             return False
         finally:
@@ -157,9 +159,9 @@ class CourseDB:
 
     def insert(self, course: Course):
         create_time = get_current_time_str()
-        sql = f"""insert into course(code,overview,tags,poster_url,banner_url,casts,tags,duration,status,create_time) values 
+        sql = f"""insert into course(code,overview,tags,poster_url,banner_url,casts,tags,duration,release_date,status,create_time) values 
                 ('{course.code}','{course.overview}','{course.tags}','{course.poster_url}','{course.banner_url}',
-                '{course.casts}','{course.tags}','{course.duration}',{course.status},'{create_time}')
+                '{course.casts}','{course.tags}','{course.duration}','{course.release_date}',{course.status},'{create_time}')
                 """
         conn = self.db.get_connect()
         cur = conn.cursor()

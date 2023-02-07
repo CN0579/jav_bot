@@ -243,11 +243,10 @@ class Core:
                 return True
         return False
 
-
-    def fill_course_info(self,course:Course):
-        crawler_detail = self.jav_library.crawling_detail(course.code)
+    def fill_course_info(self, course: Course):
+        crawler_detail = self.jav_bus.crawling_detail(course.code)
         if not crawler_detail:
-            pass
+            return
         course.overview = crawler_detail.title
         course.tags = ','.join(crawler_detail.tags)
         course.casts = ','.join(crawler_detail.casts)
@@ -256,7 +255,6 @@ class Core:
         course.banner_url = crawler_detail.banner.replace(self.jav_bot_plugin_path, '')
         course.release_date = crawler_detail.release_date
         self.course_db.update(course)
-
 
     def deal_un_download_course(self, course):
         code = course.code

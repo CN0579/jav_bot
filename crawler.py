@@ -77,19 +77,24 @@ class JavLibrary:
             av_list.append(av)
         return av_list
 
-    def crawling_detail(self, code):
+    def crawling_detail(self, code, retry_time: int = 1):
+        if retry_time > 3:
+            return
         url = f"{self.host}/cn/vl_searchbyid.php?keyword={code}"
         res = requests.get(url=url, proxies=self.proxies, cookies=self.cookie_dict, headers=self.headers)
         soup = bs4.BeautifulSoup(res.text, 'html.parser')
-        title = soup.select('h3.post-title>a')[0].text
+        title = soup.select_one('h3.post-title>a')
         if not title:
+            time.sleep(5)
+            self.crawling_detail(code, retry_time + 1)
             return None
-        video_info = soup.select('div#video_info')[0]
-        date = video_info.select('div#video_date td.text')[0].text
-        length = video_info.select('div#video_length span.text')[0].text
+        title = title.text
+        video_info = soup.select_one('div#video_info')
+        date = video_info.select_one('div#video_date td.text').text
+        length = video_info.select_one('div#video_length span.text').text
         genres = video_info.select('div#video_genres span')
         casts = video_info.select('div#video_cast td.text>span>span.star>a')
-        banner = soup.select('img#video_jacket_img')[0].get('src')
+        banner = soup.select_one('img#video_jacket_img').get('src')
         poster = banner.replace('pl.jpg', 'ps.jpg')
         cast_list = [item.text for item in casts]
         genres_list = [item.text for item in genres]
@@ -108,7 +113,7 @@ class JavLibrary:
         return crawler_detail
 
     def save_poster(self, url, code):
-        res = requests.get(url=url, proxies=self.proxies, cookies=self.cookie_dict, headers=self.headers)
+        res = requests.get(url=f"https:{url}", proxies=self.proxies, cookies=self.cookie_dict, headers=self.headers)
         if not os.path.exists(self.poster_folder):
             os.makedirs(self.poster_folder)
         poster_path = f"{self.poster_folder}/{code}.jpg"
@@ -119,7 +124,7 @@ class JavLibrary:
             return poster_path
 
     def save_banner(self, url, code):
-        res = requests.get(url=url, proxies=self.proxies, cookies=self.cookie_dict, headers=self.headers)
+        res = requests.get(url=f"https:{url}", proxies=self.proxies, cookies=self.cookie_dict, headers=self.headers)
         if not os.path.exists(self.banner_folder):
             os.makedirs(self.banner_folder)
         banner_path = f"{self.banner_folder}/{code}.jpg"
@@ -231,6 +236,10 @@ class JavBus:
     proxies: dict
     cookie_dict: dict
     headers: dict
+    poster_folder: str = f"{os.path.abspath(os.path.dirname(__file__))}/poster"
+    banner_folder: str = f"{os.path.abspath(os.path.dirname(__file__))}/banner"
+    poster_folder_name: str = '/poster'
+    banner_folder_name: str = '/banner'
 
     def __init__(self, cookie: str, ua: str, proxies: dict = None):
         self.cookie = cookie
@@ -302,6 +311,41 @@ class JavBus:
                 return teacher_list
         return None
 
+    def crawling_detail(self, code):
+        for host in self.hosts:
+            url = f"{host}/{code}"
+            try:
+                res = requests.get(url=url, proxies=self.proxies, headers=self.headers, cookies=self.cookie_dict)
+                break
+            except Exception as e:
+                continue
+        if not res:
+            return None
+        soup = bs4.BeautifulSoup(res.text, 'html.parser')
+        ps = soup.select('div.info>p')
+        title = soup.select_one('h3').text
+        release_date = ps[1].contents[1]
+        duration = ps[2].contents[1]
+        tags = ps[8].select('span.genre a')
+        tag_list = [item.text for item in tags]
+        casts = ps[10].select('span.genre>a')
+        cast_list = [item.text for item in casts]
+        banner = soup.select_one('a.bigImage>img').get('src')
+        poster = banner.replace('cover', 'thump').replace('_b', '')
+        poster_path = self.save_poster(poster, code)
+        banner_path = self.save_banner(banner, code)
+        crawler_detail = CrawlerDetail({
+            'code': code,
+            'title': title,
+            'length': duration,
+            'release_date': release_date,
+            'tags': tag_list,
+            'casts': cast_list,
+            'poster': poster_path,
+            'banner': banner_path
+        })
+        return crawler_detail
+
     def crawling_by_code(self, code):
         teacher_list = self.get_teacher_list(code)
         if teacher_list and len(teacher_list) == 1:
@@ -330,3 +374,25 @@ class JavBus:
         code = code_split_list[len(code_split_list) - 1]
         teacher_name = actors[0].select('div.photo-frame>img')[0].get('title')
         return {'teacher_code': code, 'teacher_name': teacher_name}
+
+    def save_poster(self, url, code):
+        res = requests.get(url=f"{self.hosts[0]}{url}", proxies=self.proxies, cookies=self.cookie_dict, headers=self.headers)
+        if not os.path.exists(self.poster_folder):
+            os.makedirs(self.poster_folder)
+        poster_path = f"{self.poster_folder}/{code}.jpg"
+        if os.path.exists(poster_path):
+            return poster_path
+        with open(poster_path, 'wb') as poster_img:
+            poster_img.write(res.content)
+            return poster_path
+
+    def save_banner(self, url, code):
+        res = requests.get(url=f"{self.hosts[0]}{url}", proxies=self.proxies, cookies=self.cookie_dict, headers=self.headers)
+        if not os.path.exists(self.banner_folder):
+            os.makedirs(self.banner_folder)
+        banner_path = f"{self.banner_folder}/{code}.jpg"
+        if os.path.exists(banner_path):
+            return banner_path
+        with open(banner_path, 'wb') as banner_img:
+            banner_img.write(res.content)
+            return banner_path
