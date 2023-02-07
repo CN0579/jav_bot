@@ -108,6 +108,14 @@ class Message:
         self.push_msg(title, content)
 
 
+def has_number(keyword):
+    for s in keyword:
+        if s.isdigit():
+            return True
+    else:
+        return False
+
+
 def get_true_code(input_code: str):
     code_list = input_code.split('-')
     code = ''.join(code_list)
@@ -367,7 +375,7 @@ class Core:
         self.organize.organize_all(src)
 
     def add_actor(self, keyword: str, start_date):
-        if len(keyword) == len(keyword.encode()):
+        if len(keyword) == len(keyword.encode()) and has_number(keyword):
             true_code = get_true_code(keyword)
             teacher_grab = self.jav_bus.crawling_by_code(true_code)
         else:
