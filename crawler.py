@@ -326,12 +326,12 @@ class JavBus:
         title = soup.select_one('h3').text
         release_date = ps[1].contents[1]
         duration = ps[2].contents[1]
-        tags = ps[8].select('span.genre a')
+        tags = soup.select('p>span.genre>label>a')
         tag_list = [item.text for item in tags]
-        casts = ps[10].select('span.genre>a')
+        casts = soup.select('span.genre>a')
         cast_list = [item.text for item in casts]
         banner = soup.select_one('a.bigImage>img').get('src')
-        poster = banner.replace('cover', 'thump').replace('_b', '')
+        poster = banner.replace('cover', 'thumb').replace('_b', '')
         poster_path = self.save_poster(poster, code)
         banner_path = self.save_banner(banner, code)
         crawler_detail = CrawlerDetail({
