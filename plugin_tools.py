@@ -40,7 +40,7 @@ class PluginTools:
         with open(self.zip_path, "wb") as code:
             code.write(res.content)
         with zipfile.ZipFile(self.zip_path, 'r') as zip_ref:
-            self.extract_path = f"{self.extract_path}{str(round(datetime.datetime.now().timestamp()))}"
+            self.extract_path = f"{self.extract_path}{str(round(datetime.now().timestamp()))}"
             zip_ref.extractall(self.extract_path)
         manifest_path = self.find_manifest_path()
         manifest_parent_path = os.path.split(manifest_path)[0]

@@ -10,7 +10,7 @@ from typing import List, Dict, Any
 from mbot.openapi import mbot_api
 
 from .crawler import JavLibrary, MTeam, JavBus
-from .models import Course, Teacher
+from .models import Course, Teacher, DownloadRecord
 from .plugin_tools import PluginTools
 from .db import DownloadRecordDB, CourseDB, TeacherDB
 from .organize import Organize, collect_videos
@@ -157,22 +157,28 @@ class Core:
 
     def after_rebot(self):
         _LOGGER.info("重启服务器之后,将还在下载跟下载完成没有刮削的纳入监听")
-        download_records = self.download_client.list_downloading_torrents()
+        download_records = self.download_record_db.list(download_status=0)
         for record in download_records:
-            torrent_file_hash = record['torrent_hash']
+            torrent_file_hash = record.torrent_hash
             t = threading.Thread(target=self.wait_torrent_downloaded, args=(torrent_file_hash,))
             t.start()
 
     def wait_torrent_downloaded(self, torrent_file_hash: str):
         torrent = self.download_client.get_torrent_by_hash(torrent_file_hash=torrent_file_hash)
         if not torrent:
-            _LOGGER.info(f"种子名:{torrent.name}可能已被移出下载器,监听程序结束")
+            _LOGGER.info(f"hash值{torrent_file_hash}的种子可能已被移出下载器,监听程序结束")
+            download_record = self.download_record_db.get_by_torrent_hash(torrent_file_hash)
+            if download_record:
+                download_record.download_status = -1
+                download_record.completed_time = datetime.datetime.now()
+                self.download_record_db.update(download_record)
             return
         progress = torrent.progress
         _LOGGER.info(f"种子名:{torrent.name}当前的下载进度:{progress}%")
         if int(progress == 100):
             download_record = self.download_record_db.get_by_torrent_hash(torrent_file_hash)
             download_record.download_status = 1
+            download_record.completed_time = datetime.datetime.now()
             self.download_record_db.update(download_record)
             self.message.push_downloaded(torrent.name)
             _LOGGER.info(f"种子名:{torrent.name}下载完成,开始执行MDC")
@@ -202,7 +208,6 @@ class Core:
             overview = crawling_course['overview']
             img = crawling_course['img']
             course = self.course_db.get_by_code(code)
-            _LOGGER.info(f"番号{course.code}")
             code_exist = self.find_video_from_library(code)
             if not course:
                 course = Course({
@@ -212,14 +217,12 @@ class Core:
                     'status': 0
                 })
                 course = self.course_db.insert(course)
-                _LOGGER.info(f"{course.id}")
                 if not code_exist:
                     new_course.append(code)
                 else:
                     _LOGGER.info(f"媒体库已存在番号{code},将标记为下载完成")
                     course.status = 1
                     self.course_db.update(course)
-                    _LOGGER.info(course.status)
             else:
                 if code_exist:
                     _LOGGER.info(f"媒体库已存在番号{code},将标记为下载完成")
@@ -229,43 +232,53 @@ class Core:
 
     def find_video_from_library(self, code: str):
         videos = collect_videos(self.config.hard_link_dir)
-        video_name_list = [os.path.split(video)[0] for video in videos]
+        video_name_list = [os.path.split(video)[1] for video in videos]
         for video_name in video_name_list:
             if video_name.startswith(code):
                 return True
         return False
 
+    def deal_un_download_course(self, course):
+        code = course.code
+        torrents = self.m_team.crawling_torrents(code)
+        if torrents:
+            torrent = self.m_team.get_best_torrent(torrents)
+            if torrent:
+                torrent_path = self.m_team.download_torrent(code, torrent['download_url'])
+                torrent_in_download = self.download_client.get_torrent_by_torrent_file(torrent_file=torrent_path)
+                if not torrent_in_download:
+                    res = self.download_client.download(torrent_path, save_path=self.config.path,
+                                                        category=self.config.category)
+                    if res:
+                        course.status = 1
+                        self.course_db.update(course)
+                        self.monitor_download_progress(course.id, torrent_path, 1)
+                        return code
+                    else:
+                        _LOGGER.error(f'{code}添加种子失败')
+                        return None
+                else:
+                    course.status = 1
+                    self.course_db.update(course)
+                    self.monitor_download_progress(course.id, torrent_path, 1)
+                    _LOGGER.info(f"{code}已存在下载器中,标记为已下载")
+                    return code
+            else:
+                _LOGGER.info(f"{code}没有有效的种子")
+                return None
+        else:
+            _LOGGER.info(f"{code}尚无资源")
+            return None
+        return None
+
     def fetch_un_download_code(self):
-        courses = self.course_db.list(0)
+        courses = self.course_db.list(status=0)
         _LOGGER.info(f"尚未下载的科目:{[course.code for course in courses]}")
         download_chapter = []
         for index, course in enumerate(courses):
-            code = course.code
-            torrents = self.m_team.crawling_torrents(code)
-            if torrents:
-                torrent = self.m_team.get_best_torrent(torrents)
-                if torrent:
-                    torrent_path = self.m_team.download_torrent(code, torrent['download_url'])
-                    torrent_in_download = self.download_client.get_torrent_by_torrent_file(torrent_file=torrent_path)
-                    if not torrent_in_download:
-                        res = self.download_client.download(torrent_path, save_path=self.path, category=self.category)
-                        if res:
-                            course.status = 1
-                            self.course_db.update(course)
-                            download_chapter.append(code)
-                            self.monitor_download_progress(course.id, torrent_path, 1)
-                        else:
-                            _LOGGER.error(f'添加种子失败,番号{code}')
-                    else:
-                        course.status = 1
-                        self.course_db.update(course)
-                        download_chapter.append(code)
-                        self.monitor_download_progress(course.id, torrent_path, 1)
-                        _LOGGER.info(f"{code}已存在下载器中,订阅番号将被标记为已下载")
-                else:
-                    _LOGGER.info("{}没有有效的种子")
-            else:
-                _LOGGER.info(f"{code}:尚无资源")
+            code = self.deal_un_download_course(course)
+            if code:
+                download_chapter.append(code)
             if index < len(courses) - 1:
                 _LOGGER.info("等待10-20S继续操作")
                 time.sleep(random.randint(10, 20))
@@ -279,15 +292,24 @@ class Core:
             torrent = self.download_client.get_torrent_by_torrent_file(torrent_file=torrent_path)
             _LOGGER.info(f"开启监控种子:{torrent.name}的下载进度")
             if torrent:
-                download_record = {
-                    'course_id': course_id,
-                    'torrent_name': torrent.name,
-                    'torrent_hash': torrent.hash,
-                    'torrent_path': torrent_path,
-                    'content_path': torrent.content_path,
-                    'download_status': 0
-                }
-                self.download_record_db.insert(download_record)
+                download_record = self.download_record_db.get_by_torrent_hash(torrent.hash)
+                if not download_record:
+                    download_record = DownloadRecord({
+                        'course_id': course_id,
+                        'torrent_name': torrent.name,
+                        'torrent_hash': torrent.hash,
+                        'torrent_path': torrent_path,
+                        'content_path': torrent.content_path,
+                        'download_status': 0
+                    })
+                    self.download_record_db.insert(download_record)
+                else:
+                    download_record.course_id = course_id
+                    download_record.torrent_name = torrent.name
+                    download_record.torrent_path = torrent_path
+                    download_record.content_path = torrent.content_path
+                    download_record.download_status = 0
+                    self.download_record_db.update(download_record)
                 torrent_file_hash = torrent.hash
                 t = threading.Thread(target=self.wait_torrent_downloaded, args=(torrent_file_hash,))
                 t.start()
@@ -296,18 +318,11 @@ class Core:
                 time.sleep(5)
                 self.monitor_download_progress(torrent_path, retry_time + 1)
 
-    def subscribe_by_teacher(self):
-        teacher_list = self.teacher_db.list()
-        for teacher in teacher_list:
-            code_list = self.jav_bus.get_teacher_list(teacher.code)
-            self.download_by_codes(code_list)
-
     def download_by_codes(self, code_list: List):
         for index, code in enumerate(code_list):
             if not code:
                 continue
-            res = self.download_by_code(code)
-            _LOGGER.info(res)
+            self.download_by_code(code)
             if index < len(code_list) - 1:
                 _LOGGER.info("等待10-20S继续操作")
                 time.sleep(random.randint(10, 20))
@@ -316,45 +331,21 @@ class Core:
         code = get_true_code(code)
         course = self.course_db.get_by_code(code)
         if not course:
-            course = ({
+            course = Course({
                 'code': code,
                 'status': 0
             })
             course = self.course_db.insert(course)
             self.message.push_new_code_msg([code])
         if course.status == 1:
-            return f'你已经下载过番号{code}'
+            _LOGGER.info(f'你已经下载过番号{code}')
+            return
         if self.find_video_from_library(code):
             course.status = 1
             self.course_db.update(course)
-            return f'媒体库已存在番号{code}'
-        torrents = self.m_team.crawling_torrents(code)
-        if torrents:
-            torrent = self.m_team.get_best_torrent(torrents)
-            if torrent:
-
-                torrent_path = self.m_team.download_torrent(code, torrent['download_url'])
-                torrent_in_download = self.download_client.get_torrent_by_torrent_file(torrent_file=torrent_path)
-                if not torrent_in_download:
-                    res = self.download_client.download(torrent_path, save_path=self.config.path,
-                                                        category=self.config.category)
-                    if res:
-                        course.status = 1
-                        self.course_db.update(course)
-                        self.message.push_new_download_msg([code])
-                        self.monitor_download_progress(torrent_path, 1)
-                        return f'已开始下载番号{code}'
-                    else:
-                        return f'添加种子失败,番号{code}'
-                else:
-                    self.monitor_download_progress(torrent_path, 1)
-                    course.status = 1
-                    self.course_db.update(course)
-                    return f"{code}已存在下载器中,订阅番号将被标记为已下载"
-            else:
-                return f'{code}没有找到有效的种子'
-        else:
-            return f'没有找到该番号{code}的种子,已保存到想看的科目列表'
+            _LOGGER.info(f'媒体库已存在番号{code}')
+            return
+        self.deal_un_download_course(course)
 
     def upgrade_plugin(self):
         _LOGGER.info("jav_bot开始检查更新")
@@ -383,12 +374,11 @@ class Core:
             teacher_grab = self.jav_bus.crawling_by_name(keyword)
         flag = False
         if teacher_grab:
-            teacher_url = teacher_grab['teacher_url']
-            teacher_url_split_list = teacher_url.split('/')
-            code = teacher_url_split_list[len(teacher_url_split_list) - 1]
+            teacher_code = teacher_grab['teacher_code']
             name = teacher_grab['teacher_name']
-            teacher = self.teacher_db.get_by_code(code)
-            start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+            teacher = self.teacher_db.get_by_code(teacher_code)
+            start_date_str = f"{start_date} 00:00:00"
+            start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d %H:%M:%S')
             if teacher:
                 flag = False
                 teacher.start_date = start_date
@@ -398,22 +388,20 @@ class Core:
                 flag = True
                 teacher = Teacher({
                     'name': name,
-                    'code': code,
-                    'start_date': start_date
+                    'code': teacher_code,
+                    'start_date': start_date_str
                 })
                 self.teacher_db.insert(teacher)
                 _LOGGER.info(f"{name}订阅完成")
-            code_list = self.jav_bus.crawling_actor(code, start_date)
+            code_list = self.jav_bus.crawling_actor(teacher_code, start_date)
             if code_list:
+                code_list = [item['code'] for item in code_list]
                 self.download_by_codes(code_list)
         return flag
 
-    def subscribe_by_teacher(self):
+    def update_teacher(self):
         teacher_list = self.teacher_db.list()
         for teacher in teacher_list:
-            crawling_list = self.jav_bus.crawling_actor(teacher.code, teacher.start_date)
-            code_list = ','.join([item['code'] for item in crawling_list])
+            code_list = self.jav_bus.crawling_actor(teacher.code, teacher.start_date)
+            code_list = [item['code'] for item in code_list]
             self.download_by_codes(code_list)
-
-
-

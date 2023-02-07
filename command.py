@@ -62,7 +62,6 @@ def subscribe_command(
             _LOGGER.error("日期格式错误")
             return
         add_actor(keyword, start_date)
-    else:
-        _LOGGER.error("订阅教师,下面两个参数为必传项")
+
     _LOGGER.info("订阅完成")
     return PluginCommandResponse(True, '')

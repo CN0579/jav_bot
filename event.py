@@ -5,6 +5,7 @@ from mbot.core.plugins import plugin, PluginMeta
 
 from .core import Core
 from .core import Config
+
 config: Config = None
 jav_bot: Core = None
 
@@ -31,7 +32,7 @@ def config_changed(conf: Dict[str, Any]):
 def task():
     time.sleep(random.randint(1, 3600))
     jav_bot.update_top_rank()
-    jav_bot.subscribe_by_teacher()
+    jav_bot.update_teacher()
 
 
 @plugin.task('auto_upgrade', '自动更新', cron_expression='5 * * * *')
@@ -41,10 +42,6 @@ def upgrade_task():
 
 def reorganize(src):
     jav_bot.reorganize(src)
-
-
-def subscribe_by_teacher():
-    jav_bot.subscribe_by_teacher()
 
 
 def update_top_rank():

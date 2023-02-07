@@ -135,7 +135,7 @@ class MTeam:
         return None
 
     def download_torrent(self, code, download_url):
-        res = requests.get(f"{self.host}{download_url}", cookies=self.cookie_dict)
+        res = requests.get(f"{self.host}/{download_url}", cookies=self.cookie_dict)
         torrent_path = f'{self.torrent_folder}/{code}.torrent'
         with open(torrent_path, 'wb') as torrent:
             torrent.write(res.content)
@@ -174,7 +174,7 @@ class JavBus:
         if ua:
             self.headers['User-Agent'] = ua
 
-    def crawling_actor(self, star_code, start_date: datetime.date):
+    def crawling_actor(self, star_code, start_date: datetime.datetime):
         for host in self.hosts:
             url = f"{host}/star/{star_code}"
             try:
@@ -225,7 +225,9 @@ class JavBus:
             for actor in actor_list:
                 name = actor.text
                 url = actor.get('href')
-                teacher_list.append({'name': name, 'url': url})
+                code_split_list = url.split('/')
+                code = code_split_list[len(code_split_list) - 1]
+                teacher_list.append({'teacher_name': name, 'teacher_code': code})
                 return teacher_list
         return None
 
@@ -233,7 +235,7 @@ class JavBus:
         teacher_list = self.get_teacher_list(code)
         if teacher_list and len(teacher_list) == 1:
             teacher = teacher_list[0]
-            return {'teacher_url': teacher['url'], 'teacher_name': teacher['name']}
+            return {'teacher_code': teacher['teacher_code'], 'teacher_name': teacher['teacher_name']}
         return None
 
     def crawling_by_name(self, teacher_name):
@@ -253,5 +255,7 @@ class JavBus:
         if len(actors) < 1:
             return None
         teacher_url = actors[0].get('href')
+        code_split_list = teacher_url.split('/')
+        code = code_split_list[len(code_split_list) - 1]
         teacher_name = actors[0].select('div.photo-frame>img')[0].get('title')
-        return {'teacher_url': teacher_url, 'teacher_name': teacher_name}
+        return {'teacher_code': code, 'teacher_name': teacher_name}
