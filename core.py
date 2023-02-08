@@ -229,10 +229,11 @@ class Core:
                     course.status = 1
                     self.course_db.update(course)
             else:
-                if code_exist:
-                    _LOGGER.info(f"媒体库已存在番号{code},将标记为下载完成")
-                    course.status = 1
-                    self.course_db.update(course)
+                if course.status == 0:
+                    if code_exist:
+                        _LOGGER.info(f"媒体库已存在番号{code},将标记为下载完成")
+                        course.status = 1
+                        self.course_db.update(course)
         return new_course
 
     def find_video_from_library(self, code: str):
