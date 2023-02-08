@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/or3ki/jav_bot/compare/v1.1.1...v1.1.2) (2023-02-08)
+
+
+### Bug Fixes
+
+* bug修复 ([f192591](https://github.com/or3ki/jav_bot/commit/f192591030e8c04897c7628d45268f86c4a12058))
+
 ## [1.1.1](https://github.com/or3ki/jav_bot/compare/v1.1.0...v1.1.1) (2023-02-08)
 
 
