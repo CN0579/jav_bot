@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/or3ki/jav_bot/compare/v1.0.1...v1.1.0) (2023-02-08)
+
+
+### Features
+
+* 版本号测试 ([fe1b59e](https://github.com/or3ki/jav_bot/commit/fe1b59ea87215de962347af197a4d0add948197a))
+
 ## [1.0.1](https://github.com/or3ki/jav_bot/compare/v1.0.0...v1.0.1) (2023-02-08)
 
 
