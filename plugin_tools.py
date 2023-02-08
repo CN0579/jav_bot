@@ -12,8 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class PluginTools:
-    download_url: str
-    manifest_url: str
+    release_url: str
     proxies: Dict[str, str]
     plugins_folder_path: str = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     plugin_path: str = os.path.abspath(os.path.dirname(__file__))
@@ -24,16 +23,15 @@ class PluginTools:
 
     def __init__(self, proxies: Optional[Dict] = None):
         manifest = self.get_manifest()
-        self.download_url = manifest['download_url']
-        self.manifest_url = manifest['remote_manifest_url']
+        self.release_url = manifest['release_url']
         self.proxies = proxies
 
-    def download_plugin(self, retry_time: int = 1):
+    def download_plugin(self, download_url: str, retry_time: int = 1):
         if retry_time > 3:
             _LOGGER.error("尝试拉取项目3次失败,在线更新插件失败")
             return False
         try:
-            res = requests.get(self.download_url, proxies=self.proxies)
+            res = requests.get(download_url, proxies=self.proxies)
         except Exception as e:
             self.download_plugin(retry_time + 1)
 
@@ -63,12 +61,12 @@ class PluginTools:
         with open(self.manifest_path, 'r', encoding='utf-8') as fp:
             json_data = load(fp)
             local_version = json_data['version']
-        res = requests.get(self.manifest_url, proxies=self.proxies)
+        res = requests.get(self.release_url, proxies=self.proxies)
         json = res.json()
-        latest_version = json['version']
-        if local_version != latest_version:
-            return True
-        return False
+        latest_version = json['tag_name']
+        if f"v{local_version}" != latest_version:
+            return json['zipball_url']
+        return None
 
     def get_manifest(self):
         with open(self.manifest_path, 'r', encoding='utf-8') as fp:
