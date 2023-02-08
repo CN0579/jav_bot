@@ -22,7 +22,7 @@ _LOGGER = logging.getLogger(__name__)
 class Config:
     path: str
     proxy: str
-    proxies: dict
+    proxies: dict = {}
     jav_cookie: str
     jav_bus_cookie: str
     ua: str

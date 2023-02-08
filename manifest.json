@@ -3,9 +3,11 @@
   "title": "学习工具",
   "author": "oreki",
   "description": "",
+  "_comment_start": "x-release-please-start-version",
   "version": "1.0.3",
-  "requirements": [],
+  "_comment_end": "x-release-please-end",
   "update_log": "bug fixed",
+  "requirements": [],
   "download_url": "https://github.com/or3ki/jav_bot/archive/refs/heads/master.zip",
   "remote_manifest_url": "https://raw.githubusercontent.com/or3ki/jav_bot/master/manifest.json",
   "configField": [
