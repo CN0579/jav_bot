@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/or3ki/jav_bot/compare/v1.1.2...v1.2.0) (2023-02-08)
+
+
+### Features
+
+* 自动合并 ([bc2a673](https://github.com/or3ki/jav_bot/commit/bc2a673ef3b7045b8139a02e5b502477b0329f8e))
+
 ## [1.1.2](https://github.com/or3ki/jav_bot/compare/v1.1.1...v1.1.2) (2023-02-08)
 
 
