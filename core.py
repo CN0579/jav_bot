@@ -368,16 +368,16 @@ class Core:
 
     def upgrade_plugin(self):
         _LOGGER.info("jav_bot开始检查更新")
-        need_update = self.plugin_utils.check_update()
-        if need_update:
+        new_version_download_url = self.plugin_utils.check_update()
+        if new_version_download_url:
             _LOGGER.info("jav_bot检测到新的版本,开始执行更新")
             old_manifest = self.plugin_utils.get_manifest()
             old_version = old_manifest['version']
-            if self.plugin_utils.download_plugin(1):
-                _LOGGER.info("执行更新成功")
+            if self.plugin_utils.download_plugin(new_version_download_url, 1):
                 new_manifest = self.plugin_utils.get_manifest()
                 new_version = new_manifest['version']
                 update_log = new_manifest['update_log']
+                _LOGGER.info(f"执行更新成功:当前版本{new_version}")
                 self.message.push_upgrade_success(old_version, new_version, update_log)
             else:
                 _LOGGER.info("执行更新失败")
